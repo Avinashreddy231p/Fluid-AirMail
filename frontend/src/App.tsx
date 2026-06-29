@@ -3,7 +3,8 @@ import {
   Inbox, MessageSquare, Star, Settings as SettingsIcon, Shield, Search, Plus, 
   Phone, PhoneOff, Mic, MicOff, Users, Mail, Layers, Sun, LogOut, X, 
   RefreshCw, Loader2, ArrowLeft, Reply, Forward, Trash2, UserPlus, Check, 
-  AlertCircle, Wifi, Folder, FolderPlus, Tag as TagIcon, Paperclip, ChevronLeft, Sparkles
+  AlertCircle, Wifi, Folder, FolderPlus, Tag as TagIcon, Paperclip, ChevronLeft, Sparkles,
+  Zap, FileText, Clock
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import ChatView, { Conversation, ContactHint } from './ChatView';
@@ -12,6 +13,8 @@ import AdminView from './AdminView';
 import AiActionCenter, { Message as AiMessage } from './AiActionCenter';
 import HowToUseModal from './HowToUseModal';
 import LibraryView from './LibraryView';
+import ActionDashboard from './ActionDashboard';
+import TemplatesView from './TemplatesView';
 import { useShortcuts } from './useShortcuts';
 import {
   AttachmentBubble,
@@ -164,6 +167,13 @@ const playSystemNotification = () => {
 
 // ─── Compose Modal ────────────────────────────────────────────────────────────
 
+interface ComposeTemplate {
+  id: number;
+  name: string;
+  content: string;
+  tone: string;
+}
+
 interface ComposeProps {
   onClose: () => void;
   onSend: (to: string, toEmail: string, subject: string, body: string, attachmentUrls?: string[]) => Promise<void>;
@@ -194,6 +204,62 @@ function ComposeModal({ onClose, onSend, prefillToEmail = '', prefillSubject = '
   const [showAiTools, setShowAiTools] = useState(false);
   const [fetchingAi, setFetchingAi] = useState(false);
   const aiRef = useRef<HTMLDivElement>(null);
+
+  const [templates, setTemplates] = useState<ComposeTemplate[]>([]);
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const [showFollowUpOption, setShowFollowUpOption] = useState(false);
+  const [followUpDays, setFollowUpDays] = useState(3);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load templates
+  useEffect(() => {
+    const loadTmpl = async () => {
+      try {
+        const res = await fetch(`${API}/templates`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setTemplates(await res.json());
+      } catch {}
+    };
+    loadTmpl();
+  }, [token]);
+
+  // Close template dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target as Node))
+        setShowTemplateDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const applyTemplate = async (tmpl: ComposeTemplate, customTone?: string) => {
+    setShowTemplateDropdown(false);
+    setFetchingAi(true);
+    try {
+      const res = await fetch(`${API}/ai/draft-from-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          template_id: tmpl.id,
+          placeholders: { "recipient_name": toName || toInput.split('@')[0] || "there" },
+          tone: customTone || tmpl.tone,
+          context: subject || body ? `Subject: ${subject}\nBody: ${body}` : undefined
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subject) setSubject(data.subject);
+        if (data.body) setBody(data.body);
+      }
+    } catch (e) {
+      console.error('Failed to apply template', e);
+      setBody(tmpl.content); // fallback
+    } finally {
+      setFetchingAi(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => { if (aiRef.current && !aiRef.current.contains(e.target as Node)) setShowAiTools(false); };
@@ -639,6 +705,131 @@ function ComposeModal({ onClose, onSend, prefillToEmail = '', prefillSubject = '
                 </div>
               )}
             </div>
+
+            <div style={{ width: '1px', height: '16px', background: 'var(--color-divider)', margin: '0 4px' }} />
+
+            {/* Template Picker */}
+            <div style={{ position: 'relative' }} ref={templateDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowTemplateDropdown(!showTemplateDropdown)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '7px 12px', borderRadius: '100px',
+                  background: 'var(--color-background-secondary)',
+                  border: '1px solid var(--color-divider)',
+                  color: 'var(--color-foreground-secondary)',
+                  fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                  fontFamily: 'inherit', transition: 'background 0.12s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = 'var(--color-foreground-quaternary)')}
+                onMouseOut={e => (e.currentTarget.style.background = 'var(--color-background-secondary)')}
+                title="Use Template"
+              >
+                <FileText size={14} />
+                Template
+              </button>
+              {showTemplateDropdown && (
+                <div className="animate-scale-in" style={{
+                  position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px',
+                  background: 'var(--color-background-elevated)',
+                  border: '1px solid var(--color-divider)',
+                  borderRadius: '16px', boxShadow: 'var(--shadow-xl)',
+                  padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px',
+                  minWidth: '220px', maxHeight: '250px', overflowY: 'auto', zIndex: 100,
+                }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-foreground-secondary)', padding: '4px 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Templates</div>
+                  {templates.length === 0 ? (
+                    <div style={{ padding: '12px 8px', fontSize: '13px', color: 'var(--color-foreground-secondary)', textAlign: 'center' }}>
+                      No templates yet
+                    </div>
+                  ) : (
+                    templates.map(t => (
+                      <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => applyTemplate(t)}
+                          style={{
+                            padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'transparent',
+                            textAlign: 'left', fontSize: '14px', color: 'var(--color-foreground)',
+                            cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s',
+                            display: 'flex', alignItems: 'center', gap: '8px', flex: 1,
+                          }}
+                          onMouseOver={e => (e.currentTarget.style.background = 'var(--color-foreground-quaternary)')}
+                          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                          title={`Draft with default tone (${t.tone})`}
+                        >
+                          <span style={{ fontSize: '12px' }}>{t.tone === 'professional' ? '💼' : t.tone === 'friendly' ? '😊' : t.tone === 'sales' ? '📈' : '📋'}</span>
+                          {t.name}
+                        </button>
+                        <select 
+                          className="ios-input"
+                          style={{ padding: '4px 8px', fontSize: '11px', height: '26px', borderRadius: '6px', width: '80px' }}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              applyTemplate(t, e.target.value);
+                              e.target.value = ""; // reset
+                            }
+                          }}
+                          defaultValue=""
+                        >
+                          <option value="" disabled>Tone...</option>
+                          <option value="professional">Professional</option>
+                          <option value="friendly">Friendly</option>
+                          <option value="formal">Formal</option>
+                          <option value="casual">Casual</option>
+                          <option value="sales">Sales</option>
+                        </select>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Follow-Up Reminder */}
+            <button
+              type="button"
+              onClick={() => setShowFollowUpOption(!showFollowUpOption)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '7px 12px', borderRadius: '100px',
+                background: showFollowUpOption ? 'var(--color-primary-light)' : 'var(--color-background-secondary)',
+                border: `1px solid ${showFollowUpOption ? 'var(--color-primary-light)' : 'var(--color-divider)'}`,
+                color: showFollowUpOption ? 'var(--color-primary)' : 'var(--color-foreground-secondary)',
+                fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                fontFamily: 'inherit', transition: 'all 0.15s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.background = showFollowUpOption ? 'var(--color-primary-light)' : 'var(--color-foreground-quaternary)')}
+              onMouseOut={e => (e.currentTarget.style.background = showFollowUpOption ? 'var(--color-primary-light)' : 'var(--color-background-secondary)')}
+              title={showFollowUpOption ? `Reminder set: ${followUpDays} days` : 'Set follow-up reminder'}
+            >
+              <Clock size={14} />
+              {showFollowUpOption ? `${followUpDays}d` : 'Remind'}
+            </button>
+
+            {showFollowUpOption && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}>
+                {[1, 3, 7, 14].map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setFollowUpDays(d)}
+                    style={{
+                      padding: '4px 8px', borderRadius: '6px', border: 'none',
+                      background: followUpDays === d ? 'var(--color-primary)' : 'var(--color-background-secondary)',
+                      color: followUpDays === d ? '#fff' : 'var(--color-foreground-secondary)',
+                      fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'inherit', transition: 'all 0.12s',
+                    }}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div style={{ width: '1px', height: '16px', background: 'var(--color-divider)', margin: '0 4px' }} />
             <button
@@ -1355,6 +1546,50 @@ function App() {
   const [showAiActionCenter, setShowAiActionCenter] = useState(false);
   const [showEcosystem, setShowEcosystem]   = useState(false);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
+
+  // Semantic search state
+  const [semanticSearch, setSemanticSearch] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<MailMessage[]>([]);
+  const semanticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSemanticSearch = useCallback((query: string) => {
+    if (semanticTimerRef.current) clearTimeout(semanticTimerRef.current);
+    if (!query.trim()) { setSemanticResults([]); return; }
+    semanticTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API}/mail/semantic-search?q=${encodeURIComponent(query)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results) {
+            setSemanticResults(data.results.map((m: any) => ({
+              id: m.id,
+              fromMe: m.from_me,
+              sender: m.sender_name,
+              senderEmail: m.sender_email,
+              to: m.to_name,
+              toEmail: m.to_email,
+              subject: m.subject,
+              snippet: m.snippet,
+              body: m.body,
+              time: m.time,
+              color: colorFor(m.sender_name),
+              starred: m.starred,
+              read: m.read,
+              category: m.category,
+              is_trashed: m.is_trashed,
+              tags: m.tags,
+              folder_id: m.folder_id,
+              attachment_url: m.attachment_url,
+              attachment_urls: m.attachment_urls,
+              ai_summary: m.ai_summary,
+            })));
+          }
+        }
+      } catch (e) { console.error('Semantic search error:', e); }
+    }, 500);
+  }, [token]);
 
   const { shortcutsEnabled, toggleShortcuts } = useShortcuts({
     onToggleAi: () => setShowAiActionCenter(prev => !prev),
@@ -2140,12 +2375,16 @@ function App() {
               msgs.push({ ...newMsg.surya_reply, fromMe: false });
             }
             updated[convIdx] = { ...conv, id: newMsg.thread_id, messages: msgs };
+            
+            const [movedConv] = updated.splice(convIdx, 1);
+            updated.unshift(movedConv);
           } else {
              loadChat();
           }
           return updated;
         });
         lastChatId.current = Math.max(lastChatId.current, newMsg.surya_reply?.id ?? newMsg.id, newMsg.id);
+        setTargetConvId(newMsg.thread_id);
       }
     } catch {
        setToast('Failed to send message');
@@ -2208,7 +2447,9 @@ function App() {
 
   // ── Filtering ─────────────────────────────────────────────────────────────
 
-  const filteredMessages = activeSection.startsWith('folder_')
+  const filteredMessages = (semanticSearch && searchQuery.trim() !== '')
+    ? semanticResults
+    : activeSection.startsWith('folder_')
     ? folderMessages.filter(m => {
         const q = searchQuery.toLowerCase();
         return !m.is_trashed && (!q ||
@@ -2286,8 +2527,10 @@ function App() {
   const unreadChats = conversations.reduce((s, c) => s + c.unread, 0);
 
   const sidebarNav: { id: Section; label: string; icon: React.ReactNode; count?: number }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: <Zap size={20} /> },
     { id: 'inbox',    label: 'Inbox',    icon: <Inbox size={20} />,         count: unreadMail  || undefined },
     { id: 'chats',    label: 'Chats',    icon: <MessageSquare size={20} />, count: unreadChats || undefined },
+    { id: 'templates', label: 'Templates', icon: <FileText size={20} /> },
     { id: 'library',  label: 'Library',  icon: <Layers size={20} />         },
     { id: 'contacts', label: 'Contacts', icon: <Users size={20} />,         count: contacts.length || undefined },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon size={20} />   },
@@ -2408,25 +2651,39 @@ function App() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
             <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-              <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-foreground-secondary)' }} />
+              <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: semanticSearch ? 'var(--color-primary)' : 'var(--color-foreground-secondary)' }} />
               <input
                 className="ios-input"
-                style={{ paddingLeft: '34px', paddingRight: '32px', fontSize: '15px', height: '36px', borderRadius: '10px' }}
-                placeholder="Search"
+                style={{ paddingLeft: '34px', paddingRight: semanticSearch ? '80px' : '32px', fontSize: '15px', height: '36px', borderRadius: '10px' }}
+                placeholder={semanticSearch ? 'Semantic search (AI)…' : 'Search'}
                 type="text"
                 value={searchQuery}
-                onChange={e => { setSearchQuery(e.target.value); setSelectedMsg(null); }}
+                onChange={e => { setSearchQuery(e.target.value); setSelectedMsg(null); if (semanticSearch) handleSemanticSearch(e.target.value); }}
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => { setSearchQuery(''); setSemanticResults([]); }}
                   style={{
-                    position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                    position: 'absolute', right: semanticSearch ? '42px' : '10px', top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--color-foreground-secondary)', display: 'flex', padding: '2px',
                   }}
                 ><X size={14} /></button>
               )}
+              <button
+                onClick={() => { setSemanticSearch(!semanticSearch); setSemanticResults([]); }}
+                title={semanticSearch ? 'Switch to keyword search' : 'Switch to AI semantic search'}
+                style={{
+                  position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
+                  background: semanticSearch ? 'var(--color-primary)' : 'var(--color-background-secondary)',
+                  border: '1px solid var(--color-divider)', borderRadius: '6px',
+                  cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center',
+                  color: semanticSearch ? '#fff' : 'var(--color-foreground-secondary)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <Sparkles size={12} />
+              </button>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2466,7 +2723,7 @@ function App() {
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
           {/* Mail feed column */}
-          {activeSection !== 'chats' && activeSection !== 'settings' && activeSection !== 'admin' && activeSection !== 'contacts' && activeSection !== 'library' && (
+          {activeSection !== 'chats' && activeSection !== 'settings' && activeSection !== 'admin' && activeSection !== 'contacts' && activeSection !== 'library' && activeSection !== 'dashboard' && activeSection !== 'templates' && (
             <aside style={{
               width: '360px', flexShrink: 0,
               display: 'flex', flexDirection: 'column',
@@ -2641,7 +2898,23 @@ function App() {
 
           {/* Detail / Right column */}
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--color-background)' }}>
-            {activeSection === 'contacts' ? (
+            {activeSection === 'dashboard' ? (
+              <ActionDashboard
+                token={token || ''}
+                onSelectMail={(mailId) => {
+                  const mail = messages.find(m => m.id === mailId);
+                  if (mail) { setSelectedMsg(mail); setActiveSection('inbox'); }
+                }}
+                onCompose={(toEmail, subject, body) => openCompose(toEmail || '', subject || '', body || '')}
+              />
+            ) : activeSection === 'templates' ? (
+              <TemplatesView
+                token={token || ''}
+                onUseTemplate={(subject, body) => {
+                  openCompose('', subject, body);
+                }}
+              />
+            ) : activeSection === 'contacts' ? (
               <ContactsPanel
                 contacts={contacts}
                 onAdd={handleSaveContact}

@@ -302,6 +302,52 @@ class AIMailToolsReq(BaseModel):
     tool_type: str
     text: str
 
+class TemplateCreate(BaseModel):
+    name: str
+    content: str = ""
+    tone: str = "professional"
+
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    content: Optional[str] = None
+    tone: Optional[str] = None
+
+class TemplateOut(BaseModel):
+    id: int
+    name: str
+    content: str
+    tone: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class FollowUpCreate(BaseModel):
+    mail_id: int
+    trigger_date: datetime
+    notes: Optional[str] = None
+
+class FollowUpUpdate(BaseModel):
+    status: Optional[str] = None
+    trigger_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class FollowUpOut(BaseModel):
+    id: int
+    mail_id: int
+    status: str
+    trigger_date: datetime
+    notes: Optional[str] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class DraftFromTemplateReq(BaseModel):
+    template_id: int
+    placeholders: dict = {}
+    tone: str = "professional"
+    context: str = ""
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_attachment_url(message: models.Message) -> list[str]:
@@ -2458,3 +2504,283 @@ async def generate_smart_reply(payload: SmartReplyReq, current_user: models.User
     history = f"From: {mail.sender_email}\nSubject: {mail.subject}\n\n{mail.body}"
     suggestions = await ai_service.generate_chat_suggestions(current_user, history)
     return {"suggestions": suggestions}
+
+
+# ── Templates CRUD ────────────────────────────────────────────────────────────
+
+@app.get("/templates", response_model=list[TemplateOut])
+async def get_templates(current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(models.Template).where(models.Template.user_id == current_user.id))
+    return res.scalars().all()
+
+@app.post("/templates", response_model=TemplateOut, status_code=status.HTTP_201_CREATED)
+async def create_template(payload: TemplateCreate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    template = models.Template(
+        user_id=current_user.id,
+        name=payload.name,
+        content=payload.content,
+        tone=payload.tone,
+    )
+    db.add(template)
+    await db.commit()
+    await db.refresh(template)
+    return template
+
+@app.put("/templates/{template_id}", response_model=TemplateOut)
+async def update_template(template_id: int, payload: TemplateUpdate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    template = await db.get(models.Template, template_id)
+    if not template or template.user_id != current_user.id:
+        raise HTTPException(404, "Template not found")
+    if payload.name is not None:
+        template.name = payload.name
+    if payload.content is not None:
+        template.content = payload.content
+    if payload.tone is not None:
+        template.tone = payload.tone
+    await db.commit()
+    await db.refresh(template)
+    return template
+
+@app.delete("/templates/{template_id}")
+async def delete_template(template_id: int, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    template = await db.get(models.Template, template_id)
+    if not template or template.user_id != current_user.id:
+        raise HTTPException(404, "Template not found")
+    await db.delete(template)
+    await db.commit()
+    return {"ok": True}
+
+
+# ── Follow-Ups CRUD ──────────────────────────────────────────────────────────
+
+@app.get("/follow-ups", response_model=list[FollowUpOut])
+async def get_follow_ups(current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    res = await db.execute(
+        select(models.FollowUp)
+        .where(models.FollowUp.user_id == current_user.id)
+        .order_by(models.FollowUp.trigger_date.asc())
+    )
+    return res.scalars().all()
+
+@app.post("/follow-ups", response_model=FollowUpOut, status_code=status.HTTP_201_CREATED)
+async def create_follow_up(payload: FollowUpCreate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Verify mail exists and user has access
+    mail = await db.get(models.Mail, payload.mail_id)
+    if not mail or (mail.sender_id != current_user.id and mail.recipient_id != current_user.id):
+        raise HTTPException(404, "Mail not found")
+    followup = models.FollowUp(
+        user_id=current_user.id,
+        mail_id=payload.mail_id,
+        trigger_date=payload.trigger_date,
+        notes=payload.notes,
+    )
+    db.add(followup)
+    await db.commit()
+    await db.refresh(followup)
+    return followup
+
+@app.put("/follow-ups/{followup_id}", response_model=FollowUpOut)
+async def update_follow_up(followup_id: int, payload: FollowUpUpdate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    fu = await db.get(models.FollowUp, followup_id)
+    if not fu or fu.user_id != current_user.id:
+        raise HTTPException(404, "Follow-up not found")
+    if payload.status is not None:
+        fu.status = payload.status
+    if payload.trigger_date is not None:
+        fu.trigger_date = payload.trigger_date
+    if payload.notes is not None:
+        fu.notes = payload.notes
+    await db.commit()
+    await db.refresh(fu)
+    return fu
+
+@app.delete("/follow-ups/{followup_id}")
+async def delete_follow_up(followup_id: int, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    fu = await db.get(models.FollowUp, followup_id)
+    if not fu or fu.user_id != current_user.id:
+        raise HTTPException(404, "Follow-up not found")
+    await db.delete(fu)
+    await db.commit()
+    return {"ok": True}
+
+
+# ── Semantic Search ───────────────────────────────────────────────────────────
+
+@app.get("/mail/semantic-search")
+async def semantic_search_mail(
+    q: str = Query(..., min_length=1),
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Semantic search over the user's emails using ChromaDB."""
+    try:
+        emails_coll, _ = ai_service.get_collections()
+        results = emails_coll.query(
+            query_texts=[q],
+            n_results=10,
+            where={"user_id": current_user.id},
+        )
+
+        mail_ids = []
+        if results and results.get("metadatas") and results["metadatas"][0]:
+            for meta in results["metadatas"][0]:
+                mid = meta.get("mail_id")
+                if mid and mid not in mail_ids:
+                    mail_ids.append(mid)
+
+        if not mail_ids:
+            return {"results": [], "query": q}
+
+        # Fetch actual mail objects from DB
+        stmt = (
+            select(models.Mail)
+            .where(models.Mail.id.in_(mail_ids))
+            .options(*_MAIL_OPTS)
+        )
+        res = await db.execute(stmt)
+        mails = res.scalars().all()
+
+        # Preserve ChromaDB relevance order
+        mail_map = {m.id: m for m in mails}
+        ordered = [mail_map[mid] for mid in mail_ids if mid in mail_map]
+
+        return {
+            "results": [_mail_to_dict(m, current_user.id) for m in ordered],
+            "query": q,
+        }
+    except Exception as e:
+        return {"results": [], "query": q, "error": str(e)}
+
+
+# ── AI Draft from Template ───────────────────────────────────────────────────
+
+@app.post("/ai/draft-from-template")
+async def ai_draft_from_template(
+    payload: DraftFromTemplateReq,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    template = await db.get(models.Template, payload.template_id)
+    if not template or template.user_id != current_user.id:
+        raise HTTPException(404, "Template not found")
+    
+    from ai_service import draft_from_template
+    result = await draft_from_template(
+        current_user,
+        template.content,
+        payload.placeholders,
+        payload.tone or template.tone,
+        payload.context,
+    )
+    return result
+
+
+# ── AI Follow-up Evaluator ───────────────────────────────────────────────────
+
+@app.post("/ai/evaluate-followup/{mail_id}")
+async def ai_evaluate_followup(
+    mail_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    mail = await db.get(models.Mail, mail_id)
+    if not mail or (mail.sender_id != current_user.id and mail.recipient_id != current_user.id):
+        raise HTTPException(404, "Mail not found")
+    
+    from ai_service import evaluate_followup
+    result = await evaluate_followup(current_user, mail.subject or "", mail.body or "")
+    return result
+
+
+# ── Action Dashboard Data ────────────────────────────────────────────────────
+
+@app.get("/dashboard/actions")
+async def get_action_dashboard(
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Aggregate data for the Action Dashboard view."""
+    # Get urgent/unread emails (newest first, limit 20)
+    mail_res = await db.execute(
+        select(models.Mail)
+        .where(
+            models.Mail.recipient_id == current_user.id,
+            models.Mail.is_trashed == False,
+            models.Mail.read == False,
+        )
+        .options(*_MAIL_OPTS)
+        .order_by(models.Mail.created_at.desc())
+        .limit(20)
+    )
+    unread_mails = mail_res.scalars().all()
+
+    # Get tasks due today or overdue
+    from datetime import date
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_end = datetime.combine(date.today(), datetime.max.time())
+
+    task_res = await db.execute(
+        select(models.Task)
+        .where(
+            models.Task.user_id == current_user.id,
+            models.Task.is_completed == False,
+        )
+        .order_by(models.Task.due_date.asc())
+    )
+    tasks = task_res.scalars().all()
+
+    # Get pending follow-ups
+    followup_res = await db.execute(
+        select(models.FollowUp)
+        .where(
+            models.FollowUp.user_id == current_user.id,
+            models.FollowUp.status == "pending",
+        )
+        .order_by(models.FollowUp.trigger_date.asc())
+    )
+    followups = followup_res.scalars().all()
+
+    # Get upcoming events (next 24h)
+    now = datetime.utcnow()
+    next_24h = now + timedelta(hours=24)
+    event_res = await db.execute(
+        select(models.CalendarEvent)
+        .where(
+            models.CalendarEvent.user_id == current_user.id,
+            models.CalendarEvent.start_time >= now,
+            models.CalendarEvent.start_time <= next_24h,
+        )
+        .order_by(models.CalendarEvent.start_time.asc())
+    )
+    events = event_res.scalars().all()
+
+    return {
+        "unread_emails": [_mail_to_dict(m, current_user.id) for m in unread_mails],
+        "tasks": [
+            {
+                "id": t.id, "title": t.title, "description": t.description,
+                "due_date": t.due_date.isoformat() if t.due_date else None,
+                "is_completed": t.is_completed,
+                "is_overdue": t.due_date and t.due_date < now if t.due_date else False,
+            }
+            for t in tasks
+        ],
+        "follow_ups": [
+            {
+                "id": fu.id, "mail_id": fu.mail_id, "status": fu.status,
+                "trigger_date": fu.trigger_date.isoformat(),
+                "notes": fu.notes,
+                "is_overdue": fu.trigger_date < now,
+            }
+            for fu in followups
+        ],
+        "upcoming_events": [
+            {
+                "id": e.id, "title": e.title, "description": e.description,
+                "start_time": e.start_time.isoformat(),
+                "end_time": e.end_time.isoformat(),
+            }
+            for e in events
+        ],
+    }
+

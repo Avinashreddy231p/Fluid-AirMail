@@ -34,9 +34,38 @@ class User(Base):
     openai_key = Column(String, nullable=True)
     ollama_url = Column(String, default="http://localhost:11434/v1")
     gemini_key = Column(String, nullable=True)
+    default_tone = Column(String, default="professional")
 
     sent_mails     = relationship("Mail", foreign_keys="Mail.sender_id",    back_populates="sender")
     received_mails = relationship("Mail", foreign_keys="Mail.recipient_id", back_populates="recipient")
+
+
+class Template(Base):
+    __tablename__ = "templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    content = Column(Text, default="")
+    tone = Column(String, default="professional")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class FollowUp(Base):
+    __tablename__ = "follow_ups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    mail_id = Column(Integer, ForeignKey("mails.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String, default="pending") # pending, drafted, sent, dismissed
+    trigger_date = Column(DateTime, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    mail = relationship("Mail")
 
 
 class Mail(Base):

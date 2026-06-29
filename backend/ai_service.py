@@ -451,6 +451,121 @@ Email content:
     except:
         return []
 
+async def categorize_mail(user, subject: str, body: str) -> dict:
+    """Categorize a mail into actionable streams."""
+    text = f"Subject: {subject}\n\nBody: {body}"
+    prompt = f"""You are an intelligent email triage engine.
+Analyze the following email and categorize it into exactly ONE actionable stream:
+- urgent (Time-sensitive, requires immediate attention or action)
+- actionable (Requires a response or action but not immediately)
+- informational (FYI, newsletters, updates — no action needed)
+- social (Social notifications, greetings, personal)
+- transactional (Receipts, confirmations, automated notices)
+
+Also assess whether a follow-up reminder would be appropriate (true/false) and suggest a follow-up timeframe if applicable ("1 day", "3 days", "1 week", or null).
+
+Return ONLY a valid JSON object:
+{{"stream": "urgent", "needs_followup": true, "followup_timeframe": "3 days"}}
+
+Email content:
+{text}"""
+    try:
+        if user.ai_provider == "gemini":
+            genai.configure(api_key=user.gemini_key or "invalid")
+            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            response = model.generate_content(prompt)
+            content = response.text.strip()
+        else:
+            client = await get_llm_client(user)
+            model_name = user.ai_model or ("gpt-4" if user.ai_provider == "openai" else "llama3")
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content.strip()
+        if content.startswith("```json"): content = content[7:-3]
+        elif content.startswith("```"): content = content[3:-3]
+        return json.loads(content)
+    except:
+        return {"stream": "informational", "needs_followup": False, "followup_timeframe": None}
+
+
+async def draft_from_template(user, template_content: str, placeholders: dict, tone: str = "professional", context: str = "") -> str:
+    """Replace placeholders in a template and adjust tone using AI."""
+    # First, do simple placeholder replacement
+    filled = template_content
+    for key, value in placeholders.items():
+        filled = filled.replace(f"{{{{{key}}}}}", str(value))
+
+    prompt = f"""You are an email drafting assistant. You have been given a pre-filled email template.
+Your job is to:
+1. Polish the text so it reads naturally (fix any remaining placeholder syntax like {{{{something}}}}).
+2. Adjust the tone to be: {tone}
+3. Keep the core message intact but make it sound human and polished.
+
+{"Additional context from conversation history: " + context if context else ""}
+
+Return ONLY a JSON object: {{"subject": "...", "body": "..."}}
+If the template doesn't have a clear subject, generate an appropriate one.
+
+Template content:
+{filled}"""
+    try:
+        if user.ai_provider == "gemini":
+            genai.configure(api_key=user.gemini_key or "invalid")
+            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            response = model.generate_content(prompt)
+            content = response.text.strip()
+        else:
+            client = await get_llm_client(user)
+            model_name = user.ai_model or ("gpt-4" if user.ai_provider == "openai" else "llama3")
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content.strip()
+        if content.startswith("```json"): content = content[7:-3]
+        elif content.startswith("```"): content = content[3:-3]
+        return json.loads(content)
+    except:
+        return {"subject": "", "body": filled}
+
+
+async def evaluate_followup(user, mail_subject: str, mail_body: str) -> dict:
+    """Evaluate whether an email thread needs a follow-up reminder."""
+    prompt = f"""You are an email follow-up evaluation engine.
+Analyze this email and determine:
+1. Does it require a follow-up? (true/false)
+2. Suggested follow-up timeframe ("1 day", "3 days", "1 week", "2 weeks", or null)
+3. A brief suggested follow-up note (e.g. "Check if they responded to the pricing proposal")
+
+Return ONLY a valid JSON object:
+{{"needs_followup": true, "timeframe": "3 days", "note": "Follow up on the proposal"}}
+
+Email:
+Subject: {mail_subject}
+Body: {mail_body}"""
+    try:
+        if user.ai_provider == "gemini":
+            genai.configure(api_key=user.gemini_key or "invalid")
+            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            response = model.generate_content(prompt)
+            content = response.text.strip()
+        else:
+            client = await get_llm_client(user)
+            model_name = user.ai_model or ("gpt-4" if user.ai_provider == "openai" else "llama3")
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content.strip()
+        if content.startswith("```json"): content = content[7:-3]
+        elif content.startswith("```"): content = content[3:-3]
+        return json.loads(content)
+    except:
+        return {"needs_followup": False, "timeframe": None, "note": ""}
+
+
 async def generate_character_graph(user, history_text: str) -> dict:
     if not history_text.strip():
         return {"traits": ["Unknown"], "memories": ["No chat history available."], "relation": "New Contact"}
