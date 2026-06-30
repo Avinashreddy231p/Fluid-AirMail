@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Mail, AlertCircle } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import ErrorCard from './ErrorCard';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -66,23 +67,7 @@ export default function Login() {
         </div>
 
         {/* Error message */}
-        {error && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontSize: '14px',
-            color: 'var(--color-danger)',
-            padding: '12px 16px',
-            background: 'rgba(255, 69, 58, 0.08)',
-            border: '1px solid rgba(255, 69, 58, 0.15)',
-            borderRadius: '12px',
-            animation: 'slideDown 0.2s ease',
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <ErrorCard error={error} onDismiss={() => setError('')} />}
 
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate className="apple-form">

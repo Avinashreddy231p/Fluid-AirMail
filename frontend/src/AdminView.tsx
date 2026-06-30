@@ -61,15 +61,19 @@ function ToastNotification({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: 
           style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '13px 18px', borderRadius: '12px',
-            background: t.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
-            color: '#fff', fontSize: '14px', fontWeight: 500,
-            boxShadow: 'var(--shadow-xl)', cursor: 'pointer',
+            background: t.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+            color: t.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
+            fontSize: '14px', fontWeight: 500, letterSpacing: '-0.01em',
+            boxShadow: `0 8px 32px -8px ${t.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+            border: `1px solid ${t.type === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`,
+            backdropFilter: 'blur(12px)',
+            cursor: 'pointer',
             maxWidth: '340px',
           }}
           onClick={() => onDismiss(t.id)}
         >
           {t.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
-          <span style={{ flex: 1 }}>{t.message}</span>
+          <span style={{ flex: 1, color: 'var(--color-foreground)' }}>{t.message}</span>
           <X size={14} style={{ opacity: 0.7 }} />
         </div>
       ))}

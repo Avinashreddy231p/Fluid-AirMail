@@ -26,6 +26,12 @@ def get_collections():
 async def get_llm_client(user):
     if user.ai_provider == "openai":
         return AsyncOpenAI(api_key=user.openai_key or "invalid")
+    elif user.ai_provider == "pollinations":
+        return AsyncOpenAI(
+            base_url="https://text.pollinations.ai/openai",
+            api_key="pollinations",
+            default_headers={"User-Agent": "Mozilla/5.0"}
+        )
     else:
         return AsyncOpenAI(
             base_url=user.ollama_url or "http://localhost:11434/v1",
@@ -130,7 +136,7 @@ async def query_rag(user, query: str, history: list[dict] = [], db=None, context
             task_res = await db.execute(select(models.Task).where(models.Task.user_id == user.id))
             tasks = task_res.scalars().all()
             if tasks:
-                tasks_str = "\n".join([f"[Task ID: {t.id}] {t.title} (Due: {t.due_date}, Completed: {t.is_completed})" for t in tasks])
+                tasks_str = "\n".join([f"[Task ID: {t.id}] {t.title} (Due: {t.due_date}, Completed: {t.is_completed}, Priority: {t.priority}, Color: {t.color})" for t in tasks])
                 
             event_res = await db.execute(select(models.CalendarEvent).where(models.CalendarEvent.user_id == user.id))
             events = event_res.scalars().all()
@@ -140,7 +146,7 @@ async def query_rag(user, query: str, history: list[dict] = [], db=None, context
             note_res = await db.execute(select(models.Note).where(models.Note.user_id == user.id))
             notes = note_res.scalars().all()
             if notes:
-                notes_str = "\n".join([f"[Note ID: {n.id}] {n.title}: {n.content[:100]}" for n in notes])
+                notes_str = "\n".join([f"[Note ID: {n.id}] {n.title}: {n.content[:800]}" for n in notes])
         
         settings_str = json.dumps(context_settings, indent=2) if context_settings else "No extra settings provided."
 
@@ -163,10 +169,14 @@ Valid actions include:
   - "draft_email" (to: string[], subject: string, body: string)
   - "create_calendar_event" (title: string, start_time: string, end_time: string, description: string)
   - "edit_calendar_event" (event_id: number, title: string, start_time: string, end_time: string, description: string)
-  - "create_task" (title: string, due_date: string, description: string)
+  - "delete_calendar_event" (event_id: number)
+  - "create_task" (title: string, due_date: string, description: string, priority: string, color: string)
   - "edit_task" (task_id: number, title: string, due_date: string, is_completed: boolean)
+  - "toggle_task" (task_id: number)
+  - "complete_task" (task_id: number)
   - "create_note" (title: string, content: string)
   - "edit_note" (note_id: number, title: string, content: string)
+  - "summarize_note" (note_id: number)
 
 To generate an image, use Markdown image syntax with the Pollinations AI API: `![description](https://image.pollinations.ai/prompt/{{url_encoded_prompt}})` where {{url_encoded_prompt}} is the prompt with spaces replaced by %20. You can include this markdown directly in your answer or in the body of an email/chat.
 
@@ -270,7 +280,16 @@ async def get_available_models(provider: str, key: str) -> list[dict]:
         if provider == "gemini":
             if not key: return []
             genai.configure(api_key=key)
-            return [{"id": m.name.replace('models/', ''), "tokens": getattr(m, 'inputTokenLimit', 0)} for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            allowed = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-exp"]
+            recommended = ["gemini-1.5-pro", "gemini-2.0-flash"]
+            models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    mid = m.name.replace('models/', '')
+                    if any(mid.startswith(a) for a in allowed):
+                        is_rec = any(mid.startswith(r) for r in recommended)
+                        models.append({"id": mid, "tokens": getattr(m, 'inputTokenLimit', 0), "recommended": is_rec})
+            return sorted(models, key=lambda x: (not x["recommended"], x["id"]))
         elif provider == "openai":
             if not key: return []
             client = AsyncOpenAI(api_key=key)
@@ -285,17 +304,20 @@ async def get_available_models(provider: str, key: str) -> list[dict]:
                 "o1-preview": 128000,
                 "o1-mini": 128000
             }
+            allowed = ["gpt-4o", "o1-preview", "o1-mini", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-4"]
+            recommended = ["gpt-4o", "gpt-4o-mini"]
             res = []
             for m in models.data:
-                if "gpt" in m.id or "o1" in m.id:
+                if any(m.id.startswith(a) for a in allowed):
                     tokens = known.get(m.id, 0)
                     if tokens == 0:
                         for k, v in known.items():
                             if m.id.startswith(k):
                                 tokens = v
                                 break
-                    res.append({"id": m.id, "tokens": tokens})
-            return res
+                    is_rec = any(m.id.startswith(r) for r in recommended)
+                    res.append({"id": m.id, "tokens": tokens, "recommended": is_rec})
+            return sorted(res, key=lambda x: (not x["recommended"], x["id"]))
     except Exception as e:
         print(f"Error fetching models: {e}")
     return []

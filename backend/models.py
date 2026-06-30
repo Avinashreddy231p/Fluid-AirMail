@@ -29,7 +29,7 @@ class User(Base):
     security_question = Column(String, nullable=True)
     security_answer = Column(String, nullable=True)
     
-    ai_provider = Column(String, default="ollama")
+    ai_provider = Column(String, default="pollinations")
     ai_model = Column(String, nullable=True)
     openai_key = Column(String, nullable=True)
     ollama_url = Column(String, default="http://localhost:11434/v1")
@@ -211,6 +211,8 @@ class CalendarEvent(Base):
     description = Column(String, default="")
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
+    color = Column(String, default="#6366f1")
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
@@ -224,6 +226,8 @@ class Task(Base):
     description = Column(String, default="")
     is_completed = Column(Boolean, default=False)
     due_date = Column(DateTime, nullable=True)
+    priority = Column(String, default="medium")  # low, medium, high
+    color = Column(String, default="#6366f1")     # hex color
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")

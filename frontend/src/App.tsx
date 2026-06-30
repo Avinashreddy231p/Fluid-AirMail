@@ -4,7 +4,7 @@ import {
   Phone, PhoneOff, Mic, MicOff, Users, Mail, Layers, Sun, LogOut, X, 
   RefreshCw, Loader2, ArrowLeft, Reply, Forward, Trash2, UserPlus, Check, 
   AlertCircle, Wifi, Folder, FolderPlus, Tag as TagIcon, Paperclip, ChevronLeft, Sparkles,
-  Zap, FileText, Clock
+  Zap, FileText, Clock, Calendar as CalendarIcon, CheckSquare, CheckCircle
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import ChatView, { Conversation, ContactHint } from './ChatView';
@@ -27,6 +27,9 @@ import {
 // unused import removed
 import ReactMarkdown from 'react-markdown';
 import EcosystemPanel from './EcosystemPanel';
+import CalendarView from './CalendarView';
+import TasksView from './TasksView';
+import NotesView from './NotesView';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -875,11 +878,33 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
     const t = setTimeout(onDismiss, 4000);
     return () => clearTimeout(t);
   }, [onDismiss]);
+
+  const isError = message.toLowerCase().includes('fail') || message.toLowerCase().includes('error');
+  const isSuccess = message.toLowerCase().includes('success') || message.includes('✅');
+  
+  const Icon = isError ? AlertCircle : isSuccess ? CheckCircle : Mail;
+  const color = isError ? 'var(--color-danger, #ef4444)' : isSuccess ? 'var(--color-success, #10b981)' : 'var(--color-primary)';
+  const bg = isError ? 'rgba(239, 68, 68, 0.1)' : isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-primary-light)';
+
   return (
-    <div className="toast-notification" onClick={onDismiss}>
-      <Mail size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-      <span style={{ flex: 1 }}>{message}</span>
-      <button className="toast-close"><X size={12} /></button>
+    <div className="toast-notification" onClick={onDismiss} style={{
+      border: `1px solid ${color}40`,
+      boxShadow: `0 8px 32px -8px ${color}30`
+    }}>
+      <div style={{
+        background: bg,
+        color: color,
+        padding: '8px',
+        borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}>
+        <Icon size={18} />
+      </div>
+      <span style={{ flex: 1, fontWeight: 500, letterSpacing: '-0.01em' }}>{message.replace(/^(✅|❌|⏰|📅)\s*/, '')}</span>
+      <button className="toast-close"><X size={14} /></button>
     </div>
   );
 }
@@ -2530,6 +2555,9 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: <Zap size={20} /> },
     { id: 'inbox',    label: 'Inbox',    icon: <Inbox size={20} />,         count: unreadMail  || undefined },
     { id: 'chats',    label: 'Chats',    icon: <MessageSquare size={20} />, count: unreadChats || undefined },
+    { id: 'calendar', label: 'Calendar', icon: <CalendarIcon size={20} /> },
+    { id: 'tasks',    label: 'Tasks',    icon: <CheckSquare size={20} /> },
+    { id: 'notes',    label: 'Notes',    icon: <FileText size={20} /> },
     { id: 'templates', label: 'Templates', icon: <FileText size={20} /> },
     { id: 'library',  label: 'Library',  icon: <Layers size={20} />         },
     { id: 'contacts', label: 'Contacts', icon: <Users size={20} />,         count: contacts.length || undefined },
@@ -2554,7 +2582,7 @@ function App() {
         onClick={(e) => { e.preventDefault(); setActiveSection(item.id); setSelectedMsg(null); setFilterTagId(null); }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 12px', borderRadius: '10px',
+          padding: '8px 12px', borderRadius: '9999px',
           textDecoration: 'none',
           transition: 'all 0.15s ease',
           background: isActive ? 'var(--color-primary)' : 'transparent',
@@ -2624,7 +2652,7 @@ function App() {
             onClick={handleLogout}
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
-              width: '100%', padding: '8px 12px', borderRadius: '10px',
+              width: '100%', padding: '8px 12px', borderRadius: '9999px',
               border: 'none', cursor: 'pointer', background: 'transparent',
               color: 'var(--color-danger)', fontSize: '15px', fontWeight: 500,
               fontFamily: 'inherit', textAlign: 'left', marginTop: '4px',
@@ -2654,7 +2682,7 @@ function App() {
               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: semanticSearch ? 'var(--color-primary)' : 'var(--color-foreground-secondary)' }} />
               <input
                 className="ios-input"
-                style={{ paddingLeft: '34px', paddingRight: semanticSearch ? '80px' : '32px', fontSize: '15px', height: '36px', borderRadius: '10px' }}
+                style={{ paddingLeft: '34px', paddingRight: semanticSearch ? '80px' : '32px', fontSize: '15px', height: '36px', borderRadius: '9999px' }}
                 placeholder={semanticSearch ? 'Semantic search (AI)…' : 'Search'}
                 type="text"
                 value={searchQuery}
@@ -2723,7 +2751,7 @@ function App() {
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
           {/* Mail feed column */}
-          {activeSection !== 'chats' && activeSection !== 'settings' && activeSection !== 'admin' && activeSection !== 'contacts' && activeSection !== 'library' && activeSection !== 'dashboard' && activeSection !== 'templates' && (
+          {activeSection !== 'chats' && activeSection !== 'settings' && activeSection !== 'admin' && activeSection !== 'contacts' && activeSection !== 'library' && activeSection !== 'dashboard' && activeSection !== 'templates' && activeSection !== 'calendar' && activeSection !== 'tasks' && activeSection !== 'notes' && (
             <aside style={{
               width: '360px', flexShrink: 0,
               display: 'flex', flexDirection: 'column',
@@ -2823,55 +2851,70 @@ function App() {
                 </div>
               ) : (
                 <div style={{ padding: '4px 12px 12px' }}>
-                  {filteredMessages.map((item, i) => {
+                  {filteredMessages.map((item) => {
                     const isActive = selectedMsg?.id === item.id;
                     const isUnread = !item.read && !item.fromMe;
                     return (
                       <div key={item.id}>
-                        {i > 0 && !isActive && !(selectedMsg?.id === filteredMessages[i-1]?.id) && (
-                          <div style={{ height: '1px', background: 'var(--color-divider)', marginLeft: '14px' }} />
-                        )}
+                        {/* Removed divider for card look */}
                         <div
                           onClick={() => handleClickMessage(item)}
                           style={{
-                            padding: '12px', borderRadius: '12px',
-                            cursor: 'pointer', display: 'flex', gap: '10px',
-                            transition: 'all 0.15s ease',
-                            background: isActive ? 'var(--color-primary)' : 'transparent',
+                            padding: '18px 20px', borderRadius: '20px',
+                            cursor: 'pointer', display: 'flex', gap: '14px',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            background: isActive ? 'var(--color-primary)' : 'var(--color-background-elevated)',
                             color: isActive ? '#ffffff' : 'inherit',
+                            boxShadow: isActive ? '0 12px 32px -8px rgba(99,102,241,0.5)' : 'var(--shadow-sm)',
+                            marginBottom: '12px',
+                            border: isActive ? '1px solid transparent' : '1px solid var(--color-border-premium)',
+                            backdropFilter: 'blur(24px)',
+                            WebkitBackdropFilter: 'blur(24px)',
                           }}
-                          onMouseOver={e => { if (!isActive) e.currentTarget.style.background = 'var(--color-foreground-quaternary)'; }}
-                          onMouseOut={e => { if (!isActive) e.currentTarget.style.background = isActive ? 'var(--color-primary)' : 'transparent'; }}
+                          onMouseOver={e => {
+                            if (!isActive) {
+                              e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)';
+                              e.currentTarget.style.boxShadow = '0 12px 32px -8px rgba(0,0,0,0.1)';
+                              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
+                            }
+                          }}
+                          onMouseOut={e => {
+                            if (!isActive) {
+                              e.currentTarget.style.transform = 'none';
+                              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                              e.currentTarget.style.borderColor = 'var(--color-border-premium)';
+                            }
+                          }}
                         >
                           {/* Unread dot */}
-                          <div style={{ width: '8px', display: 'flex', alignItems: 'flex-start', paddingTop: '6px', flexShrink: 0 }}>
+                          <div style={{ width: '8px', display: 'flex', alignItems: 'flex-start', paddingTop: '8px', flexShrink: 0 }}>
                             {isUnread && !isActive && (
                               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }} />
                             )}
                           </div>
 
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                               <span style={{
-                                fontSize: '15px', fontWeight: 600,
+                                fontSize: '16px', fontWeight: 700, letterSpacing: '-0.01em',
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                 color: isActive ? '#ffffff' : 'var(--color-foreground)',
                               }}>
                                 {item.fromMe ? `To: ${item.to}` : item.sender}
                               </span>
                               <span style={{
-                                fontSize: '13px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '8px',
-                                color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--color-foreground-secondary)',
+                                fontSize: '12.5px', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '8px',
+                                color: isActive ? 'rgba(255,255,255,0.8)' : 'var(--color-foreground-tertiary)',
                               }}>{item.time}</span>
                             </div>
                             <p style={{
-                              fontSize: '15px', fontWeight: 600, margin: 0,
+                              fontSize: '15px', fontWeight: 600, margin: 0, letterSpacing: '-0.01em',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                               color: isActive ? '#ffffff' : 'var(--color-foreground)',
-                              marginBottom: '2px',
+                              marginBottom: '4px',
                             }}>{item.subject || '(No Subject)'}</p>
                             <p className="line-clamp-2" style={{
-                              fontSize: '14px', margin: 0, lineHeight: 1.4,
+                              fontSize: '14.5px', margin: 0, lineHeight: 1.5,
                               color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--color-foreground-secondary)',
                             }}>{item.snippet}</p>
                             {item.ai_summary && (
@@ -2907,6 +2950,12 @@ function App() {
                 }}
                 onCompose={(toEmail, subject, body) => openCompose(toEmail || '', subject || '', body || '')}
               />
+            ) : activeSection === 'calendar' ? (
+              <CalendarView token={token || ''} API={API} />
+            ) : activeSection === 'tasks' ? (
+              <TasksView token={token || ''} API={API} />
+            ) : activeSection === 'notes' ? (
+              <NotesView token={token || ''} API={API} />
             ) : activeSection === 'templates' ? (
               <TemplatesView
                 token={token || ''}

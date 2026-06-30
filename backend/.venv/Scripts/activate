@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Avina\Downloads\Mail Project-20260622T080843Z-3-001\Mail Project\backend\.venv"
+VIRTUAL_ENV="C:\Users\Avina\OneDrive\Documents\GitHub\Fluid AirMail\backend\.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

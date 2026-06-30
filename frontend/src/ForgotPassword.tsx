@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Mail, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import ErrorCard from './ErrorCard';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -81,16 +82,7 @@ export default function ForgotPassword() {
           <p className="apple-subtitle">Recover access to your MailNet account.</p>
         </div>
 
-        {error && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'var(--color-danger)',
-            padding: '12px 16px', background: 'rgba(255, 69, 58, 0.08)', border: '1px solid rgba(255, 69, 58, 0.15)',
-            borderRadius: '12px', animation: 'slideDown 0.2s ease', marginTop: '16px'
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <ErrorCard error={error} onDismiss={() => setError('')} />}
 
         {step === 1 && (
           <form onSubmit={handleFetchQuestion} noValidate className="apple-form" style={{ marginTop: '24px' }}>

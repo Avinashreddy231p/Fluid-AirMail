@@ -46,6 +46,33 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE mails ADD COLUMN ai_summary TEXT"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE tasks ADD COLUMN priority VARCHAR DEFAULT 'medium'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE tasks ADD COLUMN color VARCHAR DEFAULT '#6366f1'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE calendar_events ADD COLUMN color VARCHAR DEFAULT '#6366f1'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE calendar_events ADD COLUMN task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL"))
+        except Exception:
+            pass
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(select(models.User).where(models.User.email == "admin@mailnet.com"))
+            if not result.scalars().first():
+                hashed_pw = security.get_password_hash("admin")
+                admin_user = models.User(username="Admin", email="admin@mailnet.com", hashed_password=hashed_pw, is_admin=True)
+                session.add(admin_user)
+                await session.commit()
+        except Exception:
+            await session.rollback()
+
     yield
     await engine.dispose()
 
@@ -256,6 +283,8 @@ class CalendarEventCreate(BaseModel):
     description: str = ""
     start_time: datetime
     end_time: datetime
+    color: str = "#6366f1"
+    task_id: Optional[int] = None
 
 class CalendarEventOut(CalendarEventCreate):
     id: int
@@ -267,9 +296,20 @@ class TaskCreate(BaseModel):
     description: str = ""
     is_completed: bool = False
     due_date: Optional[datetime] = None
+    priority: str = "medium"   # low, medium, high
+    color: str = "#6366f1"
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    is_completed: Optional[bool] = None
+    due_date: Optional[datetime] = None
+    priority: Optional[str] = None
+    color: Optional[str] = None
 
 class TaskOut(TaskCreate):
     id: int
+    created_at: datetime
     class Config:
         from_attributes = True
 
@@ -2058,6 +2098,8 @@ async def ai_execute(
                     title=act.get("title", "Untitled Task"),
                     description=act.get("description", ""),
                     due_date=due,
+                    priority=act.get("priority", "medium"),
+                    color=act.get("color", "#6366f1")
                 )
                 db.add(task)
                 await db.flush()
@@ -2081,6 +2123,14 @@ async def ai_execute(
                     results.append({"status": "success", "action": "edit_task", "task_id": task_id})
                 else:
                     results.append({"status": "error", "action": "edit_task", "error": "Task not found"})
+            elif act.get("type") in ["toggle_task", "complete_task"]:
+                task_id = act.get("task_id")
+                task = await db.get(models.Task, task_id)
+                if task and task.user_id == current_user.id:
+                    task.is_completed = not task.is_completed
+                    results.append({"status": "success", "action": act.get("type"), "task_id": task_id, "is_completed": task.is_completed})
+                else:
+                    results.append({"status": "error", "action": act.get("type"), "error": "Task not found"})
             elif act.get("type") == "delete_task":
                 task_id = act.get("task_id")
                 task = await db.get(models.Task, task_id)
@@ -2109,6 +2159,15 @@ async def ai_execute(
                     results.append({"status": "success", "action": "edit_note", "note_id": note_id})
                 else:
                     results.append({"status": "error", "action": "edit_note", "error": "Note not found"})
+            elif act.get("type") == "summarize_note":
+                note_id = act.get("note_id")
+                note = await db.get(models.Note, note_id)
+                if note and note.user_id == current_user.id:
+                    from ai_service import generate_summary
+                    summary = await generate_summary(current_user, note.content, "notes")
+                    results.append({"status": "success", "action": "summarize_note", "note_id": note_id, "summary": summary})
+                else:
+                    results.append({"status": "error", "action": "summarize_note", "error": "Note not found"})
             elif act.get("type") == "delete_note":
                 note_id = act.get("note_id")
                 note = await db.get(models.Note, note_id)
@@ -2392,6 +2451,22 @@ async def get_calendar_events(current_user: models.User = Depends(get_current_us
 
 @app.post("/calendar", response_model=CalendarEventOut)
 async def create_calendar_event(payload: CalendarEventCreate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if payload.task_id is not None:
+        # Check if an event for this task already exists
+        res = await db.execute(select(models.CalendarEvent).where(
+            models.CalendarEvent.user_id == current_user.id,
+            models.CalendarEvent.task_id == payload.task_id
+        ))
+        existing_event = res.scalars().first()
+        if existing_event:
+            existing_event.title = payload.title
+            existing_event.start_time = payload.start_time
+            existing_event.end_time = payload.end_time
+            existing_event.color = payload.color
+            await db.commit()
+            await db.refresh(existing_event)
+            return existing_event
+
     event = models.CalendarEvent(**payload.dict(), user_id=current_user.id)
     db.add(event)
     await db.commit()
@@ -2420,11 +2495,11 @@ async def create_task(payload: TaskCreate, current_user: models.User = Depends(g
     return task
 
 @app.put("/tasks/{task_id}", response_model=TaskOut)
-async def update_task(task_id: int, payload: TaskCreate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_task(task_id: int, payload: TaskUpdate, current_user: models.User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     task = await db.get(models.Task, task_id)
     if not task or task.user_id != current_user.id:
         raise HTTPException(404, "Task not found")
-    for k, v in payload.dict().items():
+    for k, v in payload.dict(exclude_unset=True).items():
         setattr(task, k, v)
     await db.commit()
     await db.refresh(task)

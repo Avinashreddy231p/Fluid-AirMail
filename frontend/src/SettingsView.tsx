@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Trash2, Folder, User, Lock, Tag, ChevronRight, Moon } from 'lucide-react';
+import ErrorCard from './ErrorCard';
 
 interface SettingsProps {
   user: any;
@@ -268,15 +269,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
     fontFamily: 'inherit',
   };
 
-  const msgStyle = (msg: string): React.CSSProperties => ({
-    fontSize: '13px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    color: msg.startsWith('Error') ? 'var(--color-danger)' : 'var(--color-success)',
-    padding: '8px 16px',
-    paddingBottom: '0',
-  });
+
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [accentColor, setAccentColor] = useState(localStorage.getItem('accentColor') || '#007aff');
@@ -424,7 +417,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
             </div>
           </form>
         </div>
-        {profileMsg && <div style={{...msgStyle(profileMsg), marginTop: '-16px', marginBottom: '16px'}}>{profileMsg}</div>}
+        {profileMsg && <ErrorCard error={profileMsg.replace(/^Error:\s*/, '')} type={profileMsg.startsWith('Error') ? 'error' : 'success'} onDismiss={() => setProfileMsg('')} />}
 
         {/* ═══ Security ═══ */}
         <div style={sectionHeaderStyle}>Security & Password</div>
@@ -470,7 +463,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
             </div>
           </form>
         </div>
-        {pwdMsg && <div style={{...msgStyle(pwdMsg), marginTop: '-16px', marginBottom: '16px'}}>{pwdMsg}</div>}
+        {pwdMsg && <ErrorCard error={pwdMsg.replace(/^Error:\s*/, '')} type={pwdMsg.startsWith('Error') ? 'error' : 'success'} onDismiss={() => setPwdMsg('')} />}
 
         {/* ═══ AI Preferences ═══ */}
         <div style={sectionHeaderStyle}>Apple Intelligence (AI Settings)</div>
@@ -482,6 +475,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
               onChange={(e) => setAiProvider(e.target.value)}
               className="apple-select"
             >
+              <option value="pollinations">Free AI (Pollinations - No Key Needed)</option>
               <option value="ollama">Local AI (Ollama - Maximum Privacy)</option>
               <option value="openai">Cloud AI (OpenAI API)</option>
               <option value="gemini">Google Gemini API</option>
@@ -534,7 +528,11 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
                   className="apple-select"
                 >
                   <option value="">Select a Model...</option>
-                  {availableModels.map(m => <option key={m.id || m} value={m.id || m}>{m.id || m} {m.tokens ? `(${m.tokens.toLocaleString()} tokens)` : ''}</option>)}
+                  {availableModels.map(m => (
+                    <option key={m.id || m} value={m.id || m}>
+                      {m.recommended ? '🌟 ' : ''}{m.id || m} {m.tokens ? `(${m.tokens.toLocaleString()} tokens left)` : ''} {m.recommended ? '(Recommended)' : ''}
+                    </option>
+                  ))}
                   {aiModel && !availableModels.find(m => (m.id || m) === aiModel) && <option value={aiModel}>{aiModel} (Current)</option>}
                 </select>
                 <button

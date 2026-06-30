@@ -110,6 +110,11 @@ The UI will open at **http://localhost:5173**
 ### 3 — Admin Account Setup
 
 By default, the **very first user** to register on the platform is automatically granted **Admin** privileges.
+
+For testing and demonstration purposes, a default admin account is seeded automatically:
+- **Email:** `admin@mailnet.com`
+- **Password:** `admin`
+
 Once logged in, the Admin user will see a special "Shield" icon in the navigation bar to access the **Admin Analytics Dashboard**, which displays:
 - Real-time active user metrics
 - Total emails, chats, and exact words exchanged

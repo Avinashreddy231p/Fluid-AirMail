@@ -746,7 +746,7 @@ function ChatWindow({ conv, contacts, onAddContact, onVoiceCall, onBack, onSendM
         <div style={{
           display: 'flex', alignItems: 'center', gap: '4px',
           background: 'var(--color-background-secondary)',
-          borderRadius: '20px', padding: '4px 8px',
+          borderRadius: '9999px', padding: '4px 8px',
         }}>
           <button
             onClick={() => fileInputRef.current?.click()}
