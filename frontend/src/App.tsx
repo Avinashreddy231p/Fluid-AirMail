@@ -1723,9 +1723,7 @@ function App() {
 
 
   // Track the highest mail id seen so polling only fetches new ones
-  const lastMailId = useRef(0);
   const lastChatId = useRef(0);
-  const pollTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
 
 
   // ── Fetch user profile ────────────────────────────────────────────────────
@@ -1762,7 +1760,6 @@ function App() {
       const deduped = all.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
       deduped.sort((a, b) => b.id - a.id);
       setMessages(deduped);
-      if (deduped.length > 0) lastMailId.current = Math.max(...deduped.map(m => m.id));
       setBackendOnline(true);
     } catch {
       setBackendOnline(false);
@@ -1812,10 +1809,6 @@ function App() {
     }
   }, [token]);
 
-  const dismissTutorial = () => {
-    localStorage.setItem('has_seen_tutorial', 'true');
-    setShowTutorial(false);
-  };
 
   const loadData = async () => {
     await Promise.all([loadMail(), loadChat(), loadTagsAndFolders()]);
@@ -1852,53 +1845,26 @@ function App() {
 
   useEffect(() => {
     if (!token || !user) return;
-    const pollMail = async () => {
+    
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = API.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}//${wsHost}/ws?token=${token}`;
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = (event) => {
       try {
-        const res = await fetch(`${API}/mail/poll?since_id=${lastMailId.current}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const newMails: any[] = await res.json();
-        if (newMails.length === 0) return;
-
-        const converted = newMails.map(m => apiMailToMsg(m, user.id));
-        setMessages(prev => {
-          const ids = new Set(prev.map(m => m.id));
-          const fresh = converted.filter(m => !ids.has(m.id));
-          if (fresh.length === 0) return prev;
-          fresh.forEach(m => {
-            if (!m.fromMe) {
-              const msgText = `New mail from ${m.sender}: "${m.subject || '(no subject)'}"`;
-              setToast(msgText);
-              playSystemNotification();
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('Fluid AirMail', { body: msgText });
-              }
-            }
-          });
-          const updated = [...fresh, ...prev];
-          lastMailId.current = Math.max(lastMailId.current, ...fresh.map(m => m.id));
-          return updated;
-        });
-        setBackendOnline(true);
-      } catch { /* backend offline */ }
-    };
-
-    const pollChat = async () => {
-      try {
-        const res = await fetch(`${API}/chat/poll?since_msg_id=${lastChatId.current}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const { new_messages, status_updates } = await res.json();
-        if (!new_messages.length && !status_updates.length) return;
-
-        setConversations(prev => {
-          let updated = [...prev];
-          let maxId = lastChatId.current;
-
-          new_messages.forEach((msg: any) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'new_mail') {
+          // Trigger a lightweight fetch to get the new mail
+          loadMail();
+        } else if (data.type === 'new_chat') {
+          const msg = data.message;
+          setConversations(prev => {
+            let updated = [...prev];
+            let maxId = lastChatId.current;
             if (msg.id > maxId) maxId = msg.id;
+            
             const convIdx = updated.findIndex(c => c.id === msg.thread_id);
             if (convIdx >= 0) {
               const conv = updated[convIdx];
@@ -1917,40 +1883,39 @@ function App() {
             } else {
                loadChat();
             }
+            lastChatId.current = maxId;
+            return updated;
           });
-
-          if (status_updates.length > 0) {
-             const statusMap = new Map(status_updates.map((u: any) => [u.id, u.status]));
-             updated = updated.map(conv => {
-                let changed = false;
+        } else if (data.type === 'chat_read') {
+          const thread_id = data.thread_id;
+          setConversations(prev => {
+            return prev.map(conv => {
+              if (conv.id === thread_id) {
                 const newMsgs = conv.messages.map(m => {
-                   if (m.fromMe && statusMap.has(m.id)) {
-                      const newStatus = statusMap.get(m.id);
-                      if (m.status !== newStatus) {
-                         changed = true;
-                         return { ...m, status: newStatus as any };
-                      }
-                   }
-                   return m;
+                  if (m.fromMe && m.status !== 'read') {
+                    return { ...m, status: 'read' as any };
+                  }
+                  return m;
                 });
-                return changed ? { ...conv, messages: newMsgs } : conv;
-             });
-          }
-
-          lastChatId.current = maxId;
-          return updated;
-        });
-      } catch { /* backend offline */ }
+                return { ...conv, messages: newMsgs };
+              }
+              return conv;
+            });
+          });
+        }
+      } catch (e) {
+        console.error("WS message error", e);
+      }
     };
-
-    const poll = async () => {
-       await pollMail();
-       await pollChat();
+    
+    ws.onclose = () => {
+       console.log('WebSocket disconnected');
     };
-
-    pollTimer.current = setInterval(poll, 5000);
-    return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
-  }, [token, user, loadChat]);
+    
+    return () => {
+      ws.close();
+    };
+  }, [token, user, loadMail, loadChat]);
 
   // ── Mail actions ──────────────────────────────────────────────────────────
 
@@ -1998,7 +1963,6 @@ function App() {
       attachment_url: attachmentUrls?.[0],
     };
     setMessages(prev => [sentMsg, ...prev]);
-    lastMailId.current = Math.max(lastMailId.current, sentMsg.id);
 
     if (result.delivered_to_registered_user) {
       setToast(`✅ Mail delivered to ${result.recipient} on Fluid AirMail`);

@@ -123,6 +123,56 @@ bearer_scheme = HTTPBearer()
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[int, list[WebSocket]] = {}
+
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
+
+    def disconnect(self, websocket: WebSocket, user_id: int):
+        if user_id in self.active_connections:
+            if websocket in self.active_connections[user_id]:
+                self.active_connections[user_id].remove(websocket)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+
+    async def send_personal_message(self, message: dict, user_id: int):
+        if user_id in self.active_connections:
+            # Create a copy of the list to avoid runtime errors if a socket disconnects
+            for connection in list(self.active_connections[user_id]):
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    self.disconnect(connection, user_id)
+
+manager = ConnectionManager()
+
+from jose import JWTError, jwt
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
+    try:
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+        user_id = int(user_id_str)
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # We don't process incoming messages yet, just keep the connection alive
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
+
 def fetch_link_meta_sync(url: str):
     try:
         with httpx.Client(follow_redirects=True, timeout=5.0) as client:
@@ -1130,6 +1180,7 @@ async def send_mail(
                 elif rule.action_type == 'star':
                     mail.starred = True
         await db.commit()
+        await manager.send_personal_message({"type": "new_mail"}, recipient_user.id)
     # -------------------------------------
 
     # --- Create CC copies for registered CC users ---
@@ -1160,6 +1211,7 @@ async def send_mail(
                     ai_summary      = mail.ai_summary,
                 )
                 db.add(cc_mail)
+                await manager.send_personal_message({"type": "new_mail"}, cc_user.id)
         await db.commit()
 
     # --- Create BCC copies for registered BCC users ---
@@ -1189,6 +1241,7 @@ async def send_mail(
                     ai_summary      = mail.ai_summary,
                 )
                 db.add(bcc_mail)
+                await manager.send_personal_message({"type": "new_mail"}, bcc_user.id)
         await db.commit()
 
     ai_service.add_mail_to_rag(current_user.id, mail.id, mail.subject, mail.body)
@@ -1844,7 +1897,7 @@ async def send_chat(
             }
         }
 
-    return {
+    return_msg = {
         "id": msg.id,
         "thread_id": thread_id,
         "text": msg.encrypted_content,
@@ -1854,7 +1907,13 @@ async def send_chat(
         "attachment_url": metadata.get("attachment_urls")[0] if metadata.get("attachment_urls") else None,
         "attachment_urls": metadata.get("attachment_urls", [])
     }
-
+    
+    if to_email != "surya@fluidairmail.ai":
+        ws_msg = dict(return_msg)
+        ws_msg["fromMe"] = False
+        await manager.send_personal_message({"type": "new_chat", "message": ws_msg}, recipient.id)
+        
+    return return_msg
 @app.get("/chat/conversations")
 async def get_conversations(
     current_user: models.User = Depends(get_current_user),
@@ -2024,6 +2083,15 @@ async def chat_read(
         .values(status="read")
     )
     await db.commit()
+    
+    res = await db.execute(
+        select(models.ThreadParticipant.user_id)
+        .where(models.ThreadParticipant.thread_id == body.thread_id, models.ThreadParticipant.user_id != current_user.id)
+    )
+    other_user_id = res.scalars().first()
+    if other_user_id:
+        await manager.send_personal_message({"type": "chat_read", "thread_id": body.thread_id}, other_user_id)
+        
     return {"ok": True}
 
 

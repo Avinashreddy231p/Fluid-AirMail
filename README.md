@@ -206,7 +206,7 @@ All authenticated endpoints require an `Authorization: Bearer <token>` header.
 - [x] Message threading & reply chains
 - [x] Interactive UI walkthroughs
 - [x] Semantic AI search & summaries
-- [ ] Real-time WebSocket chat fallback
+- [x] Real-time WebSocket chat fallback
 - [ ] File attachments (end-to-end encrypted storage)
 - [ ] Per-user public-key encryption (E2EE)
 - [ ] PostgreSQL migration with Alembic
