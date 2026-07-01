@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Query, Body, Upload
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, aliased
@@ -168,7 +168,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
     await manager.connect(websocket, user_id)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
             # We don't process incoming messages yet, just keep the connection alive
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
@@ -1842,7 +1842,6 @@ async def send_chat(
 
     # ── Surya AI interception ─────────────────────────────────────────────────
     if to_email == "surya@fluidairmail.ai":
-        import asyncio
         try:
             # Build history from thread messages
             hist_res = await db.execute(
@@ -2977,8 +2976,8 @@ async def get_action_dashboard(
 
     # Get tasks due today or overdue
     from datetime import date
-    today_start = datetime.combine(date.today(), datetime.min.time())
-    today_end = datetime.combine(date.today(), datetime.max.time())
+    datetime.combine(date.today(), datetime.min.time())
+    datetime.combine(date.today(), datetime.max.time())
 
     task_res = await db.execute(
         select(models.Task)
