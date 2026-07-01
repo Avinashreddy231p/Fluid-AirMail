@@ -14,7 +14,7 @@
     "autoprefixer": "^10.5.0",
     "dompurify": "^3.4.8",
     "framer-motion": "^12.40.0",
-    "lucide-react": "^0.364.0",
+    "lucide-react": "^1.23.0",
     "mammoth": "^1.12.0",
     "postcss": "^8.5.15",
     "react": "^19.2.7",
