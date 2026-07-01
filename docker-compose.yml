@@ -8,10 +8,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - mailnet_data:/app/data
+      - fluidairmail_data:/app/data
       - ./backend/uploads:/app/uploads
     environment:
-      - DATABASE_URL=sqlite:////app/data/mailnet.db
+      - DATABASE_URL=sqlite:////app/data/fluidairmail.db
     restart: unless-stopped
 
   frontend:
@@ -27,4 +27,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  mailnet_data:
+  fluidairmail_data:

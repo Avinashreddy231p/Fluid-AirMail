@@ -60,9 +60,9 @@ export default function Login() {
           <div style={{ color: 'var(--color-foreground)' }}>
             <Mail size={42} strokeWidth={2.5} />
           </div>
-          <h1 className="fluid-title">Sign In with MailNet</h1>
+          <h1 className="fluid-title">Sign In with Fluid AirMail</h1>
           <p className="fluid-subtitle">
-            Use your MailNet Account to access all MailNet services.
+            Use your Fluid AirMail Account to access all Fluid AirMail services.
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function Login() {
             <div className="fluid-field-row">
               <div className="fluid-field-col">
                 <div className="fluid-input-wrapper">
-                  <span className="fluid-input-label">MailNet Account ID</span>
+                  <span className="fluid-input-label">Fluid AirMail Account ID</span>
                   <input
                     id="login-email"
                     type="email"
@@ -156,7 +156,7 @@ export default function Login() {
         {/* Footer info link */}
         <div style={{ textAlign: 'center', marginTop: '4px' }}>
           <p style={{ fontSize: '14px', color: 'var(--color-foreground-secondary)' }}>
-            Don't have a MailNet Account?{' '}
+            Don't have a Fluid AirMail Account?{' '}
             <RouterLink to="/register" className="fluid-link">
               Create yours now
             </RouterLink>
@@ -169,7 +169,7 @@ export default function Login() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
           </svg>
           <p className="fluid-privacy-text">
-            Your MailNet Account information is used to allow you to sign in securely and access your data. MailNet records certain data for security, support and reporting purposes. See how your data is managed...
+            Your Fluid AirMail Account information is used to allow you to sign in securely and access your data. Fluid AirMail records certain data for security, support and reporting purposes. See how your data is managed...
           </p>
         </div>
       </div>

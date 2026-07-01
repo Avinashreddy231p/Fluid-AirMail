@@ -79,7 +79,7 @@ export default function ForgotPassword() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
           <div style={{ color: 'var(--color-foreground)' }}><Mail size={42} strokeWidth={2.5} /></div>
           <h1 className="apple-title">Account Recovery</h1>
-          <p className="apple-subtitle">Recover access to your MailNet account.</p>
+          <p className="apple-subtitle">Recover access to your Fluid AirMail account.</p>
         </div>
 
         {error && <ErrorCard error={error} onDismiss={() => setError('')} />}

@@ -71,7 +71,7 @@ class FollowUp(Base):
 class Mail(Base):
     """
     A mail message sent from one registered user to another (or an external address).
-    - If recipient_id is set, the recipient is a registered MailNet user.
+    - If recipient_id is set, the recipient is a registered Fluid AirMail user.
     - If recipient_id is None, recipient_email holds an external/unregistered address.
     """
     __tablename__ = "mails"

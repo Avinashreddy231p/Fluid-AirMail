@@ -8,7 +8,7 @@ async def run_async_migrations():
         await conn.run_sync(Base.metadata.create_all)
 
 def run_sync_migrations():
-    conn = sqlite3.connect('mailnet.db')
+    conn = sqlite3.connect('fluidairmail.db')
     cursor = conn.cursor()
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN default_tone VARCHAR DEFAULT 'professional'")

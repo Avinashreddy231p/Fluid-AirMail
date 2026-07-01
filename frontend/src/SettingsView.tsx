@@ -358,7 +358,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
         </div>
 
         {/* ═══ Profile ═══ */}
-        <div style={sectionHeaderStyle}>Apple Account (Profile)</div>
+        <div style={sectionHeaderStyle}>Fluid Account (Profile)</div>
         <div className="ios-list-group">
           {/* Avatar Row */}
           <div className="ios-list-row" style={{ minHeight: '80px', cursor: 'pointer' }} onClick={() => fileInputRef.current?.click()}>
@@ -375,7 +375,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
               )}
               <div style={{ flex: 1 }}>
                 <div className="ios-list-text" style={{ fontSize: '20px', fontWeight: 500 }}>{username || 'Name'}</div>
-                <div className="ios-list-subtext">Apple Account, iCloud, and more</div>
+                <div className="ios-list-subtext">Fluid Account, Security, and more</div>
               </div>
             </div>
             <ChevronRight size={20} color="var(--color-foreground-tertiary)" />
@@ -466,14 +466,14 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
         {pwdMsg && <ErrorCard error={pwdMsg.replace(/^Error:\s*/, '')} type={pwdMsg.startsWith('Error') ? 'error' : 'success'} onDismiss={() => setPwdMsg('')} />}
 
         {/* ═══ AI Preferences ═══ */}
-        <div style={sectionHeaderStyle}>Apple Intelligence (AI Settings)</div>
+        <div style={sectionHeaderStyle}>Fluid Intelligence (AI Settings)</div>
         <div className="ios-list-group">
           <div className="ios-list-row" style={{ padding: 0 }}>
             <select
               style={inputRowStyle}
               value={aiProvider}
               onChange={(e) => setAiProvider(e.target.value)}
-              className="apple-select"
+              className="fluid-select"
             >
               <option value="pollinations">Free AI (Pollinations - No Key Needed)</option>
               <option value="ollama">Local AI (Ollama - Maximum Privacy)</option>
@@ -525,7 +525,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
                   style={{ ...inputRowStyle, flex: 1, borderRight: '1px solid var(--color-divider)' }}
                   value={aiModel}
                   onChange={(e) => setAiModel(e.target.value)}
-                  className="apple-select"
+                  className="fluid-select"
                 >
                   <option value="">Select a Model...</option>
                   {availableModels.map(m => (
@@ -696,7 +696,7 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
           <form onSubmit={handleAddRule} style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', borderBottom: '1px solid var(--color-divider)' }}>
              <input className="ios-input" placeholder="Rule Name (e.g. Delete spam)" value={ruleName} onChange={e => setRuleName(e.target.value)} required />
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <select className="apple-select ios-input" value={ruleCondition} onChange={e => setRuleCondition(e.target.value)}>
+                <select className="fluid-select ios-input" value={ruleCondition} onChange={e => setRuleCondition(e.target.value)}>
                    <option value="sender">If Sender Contains</option>
                    <option value="subject">If Subject Contains</option>
                    <option value="attachment">If Has Attachment</option>
@@ -704,13 +704,13 @@ export default function SettingsView({ user, token, onUpdateUser, API, allTags, 
                 <input className="ios-input" placeholder="Pattern to match" value={rulePattern} onChange={e => setRulePattern(e.target.value)} required={ruleCondition !== 'attachment'} disabled={ruleCondition === 'attachment'} />
              </div>
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <select className="apple-select ios-input" value={ruleAction} onChange={e => setRuleAction(e.target.value)}>
+                <select className="fluid-select ios-input" value={ruleAction} onChange={e => setRuleAction(e.target.value)}>
                    <option value="trash">Move to Bin</option>
                    <option value="star">Star it</option>
                    <option value="tag">Add Tag</option>
                 </select>
                 {ruleAction === 'tag' && (
-                  <select className="apple-select ios-input" value={ruleActionValue} onChange={e => setRuleActionValue(e.target.value)} required>
+                  <select className="fluid-select ios-input" value={ruleActionValue} onChange={e => setRuleActionValue(e.target.value)} required>
                      <option value="">Select a tag...</option>
                      {allTags?.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                   </select>

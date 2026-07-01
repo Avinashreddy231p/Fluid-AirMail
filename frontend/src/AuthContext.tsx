@@ -13,19 +13,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('mailnet_token');
+    const storedToken = localStorage.getItem('fluidairmail_token');
     if (storedToken) {
       setToken(storedToken);
     }
   }, []);
 
   const login = (newToken: string) => {
-    localStorage.setItem('mailnet_token', newToken);
+    localStorage.setItem('fluidairmail_token', newToken);
     setToken(newToken);
   };
 
   const logout = () => {
-    localStorage.removeItem('mailnet_token');
+    localStorage.removeItem('fluidairmail_token');
     setToken(null);
   };
 

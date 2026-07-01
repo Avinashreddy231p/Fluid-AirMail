@@ -577,6 +577,7 @@ function ComposeModal({ onClose, onSend, prefillToEmail = '', prefillSubject = '
             padding: '10px 16px',
             borderTop: '1px solid var(--color-divider)',
             flexShrink: 0,
+            flexWrap: 'wrap',
           }}>
             <button
               type="button"
@@ -1871,7 +1872,7 @@ function App() {
               setToast(msgText);
               playSystemNotification();
               if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('MailNet', { body: msgText });
+                new Notification('Fluid AirMail', { body: msgText });
               }
             }
           });
@@ -1909,7 +1910,7 @@ function App() {
                    setToast(txt);
                    playSystemNotification();
                    if ('Notification' in window && Notification.permission === 'granted') {
-                     new Notification('MailNet', { body: txt });
+                     new Notification('Fluid AirMail', { body: txt });
                    }
                  }
               }
@@ -2000,7 +2001,7 @@ function App() {
     lastMailId.current = Math.max(lastMailId.current, sentMsg.id);
 
     if (result.delivered_to_registered_user) {
-      setToast(`✅ Mail delivered to ${result.recipient} on MailNet`);
+      setToast(`✅ Mail delivered to ${result.recipient} on Fluid AirMail`);
     } else {
       setToast(`📤 Mail sent to ${toEmail}`);
     }
@@ -2365,7 +2366,7 @@ function App() {
       }}>
         {/* Branding */}
         <div style={{ padding: '4px 12px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-foreground)', letterSpacing: '-0.02em' }}>MailNet</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-foreground)', letterSpacing: '-0.02em' }}>Fluid AirMail</div>
           <div style={{ fontSize: '13px', color: 'var(--color-foreground-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user?.email || 'Personal Account'}
           </div>

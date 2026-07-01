@@ -1,7 +1,7 @@
 import sqlite3
 
 def run():
-    conn = sqlite3.connect("mailnet.db")
+    conn = sqlite3.connect("fluidairmail.db")
     cursor = conn.cursor()
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN ai_model VARCHAR")

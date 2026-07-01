@@ -6,7 +6,7 @@ import bcrypt
 from jose import jwt
 
 # Security Configurations
-SECRET_KEY = "super-secret-mailnet-key-replace-in-production"
+SECRET_KEY = "super-secret-fluidairmail-key-replace-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

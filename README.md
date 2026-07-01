@@ -16,15 +16,17 @@
 
 ## 📸 Screenshots
 
-*(Replace the placeholder URLs below with links to actual screenshots of your application)*
-
-| Dashboard & Unified Inbox | AI Action Center |
+| Unified Inbox & AI Assistant | Action Center |
 | :---: | :---: |
-| <img src="https://via.placeholder.com/600x350.png?text=Dashboard+Screenshot" alt="Dashboard" width="100%"> | <img src="https://via.placeholder.com/600x350.png?text=AI+Action+Center+Screenshot" alt="AI Center" width="100%"> |
+| <img src="assets/ai_assistant.png" alt="Inbox and AI Assistant" width="100%"> | <img src="assets/action_center.png" alt="Action Center" width="100%"> |
 
-| Secure Compose & Templates | Admin Analytics |
+| Secure Compose & Templates                                     | Admin Dashboard                                                 |
+| :--------------------------------------------------------------:| :---------------------------------------------------------------:|
+| <img src="assets/compose.png" alt="Compose Mail" width="100%"> | <img src="assets/admin.png" alt="Admin Dashboard" width="100%"> |
+
+| Settings & Personalization | |
 | :---: | :---: |
-| <img src="https://via.placeholder.com/600x350.png?text=Compose+Mail+Screenshot" alt="Compose Mail" width="100%"> | <img src="https://via.placeholder.com/600x350.png?text=Admin+Analytics+Screenshot" alt="Admin Analytics" width="100%"> |
+| <img src="assets/settings.png" alt="Settings" width="100%"> | |
 
 ---
 
@@ -92,7 +94,7 @@ Fluid AirMail/
 │   ├── ai_service.py         # Semantic Search & LLM integration
 │   ├── requirements.txt      # Python dependencies
 │   ├── Dockerfile            # Backend container configuration
-│   └── mailnet.db            # SQLite database (auto-created)
+│   └── fluidairmail.db            # SQLite database (auto-created)
 │
 ├── frontend/                 # React + TypeScript (Vite)
 │   ├── index.html            # HTML entry point (fonts, SEO)
@@ -153,7 +155,7 @@ npm run dev
 By default, the **very first user** to register on the platform is automatically granted **Admin** privileges.
 
 For testing and demonstration purposes, a default admin account is seeded automatically:
-- **Email:** `admin@mailnet.com`
+- **Email:** `admin@fluidairmail.com`
 - **Password:** `admin`
 
 Once logged in, the Admin user will see a special "Shield" icon in the navigation bar to access the **Admin Analytics Dashboard**.

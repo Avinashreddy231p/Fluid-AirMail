@@ -80,10 +80,10 @@ async def lifespan(app: FastAPI):
             pass
     async with AsyncSessionLocal() as session:
         try:
-            result = await session.execute(select(models.User).where(models.User.email == "admin@mailnet.com"))
+            result = await session.execute(select(models.User).where(models.User.email == "admin@fluidairmail.com"))
             if not result.scalars().first():
                 hashed_pw = security.get_password_hash("admin")
-                admin_user = models.User(username="Admin", email="admin@mailnet.com", hashed_password=hashed_pw, is_admin=True)
+                admin_user = models.User(username="Admin", email="admin@fluidairmail.com", hashed_password=hashed_pw, is_admin=True)
                 session.add(admin_user)
                 await session.commit()
         except Exception:
@@ -96,7 +96,7 @@ async def lifespan(app: FastAPI):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="MailNet API",
+    title="Fluid AirMail API",
     description="Secure Mail & Chat — real cross-account delivery",
     version="2.1.0",
     lifespan=lifespan,
@@ -574,7 +574,7 @@ async def get_admin_user(current_user: models.User = Depends(get_current_user)):
 
 @app.get("/")
 async def root():
-    return {"message": "MailNet API v2.1 — real cross-account mail delivery"}
+    return {"message": "Fluid AirMail API v2.1 — real cross-account mail delivery"}
 
 
 @app.get("/health")
@@ -1006,7 +1006,7 @@ async def send_mail(
 ):
     """
     Send a mail (or save a draft if is_draft=True).
-    If the recipient email belongs to a registered MailNet user,
+    If the recipient email belongs to a registered Fluid AirMail user,
     recipient_id is set so the mail appears in their inbox instantly.
     Also creates CC copies for registered CC recipients.
     """
@@ -1746,7 +1746,7 @@ async def send_chat(
     recipient = result.scalars().first()
 
     if not recipient:
-        raise HTTPException(404, "Recipient not found on MailNet")
+        raise HTTPException(404, "Recipient not found on Fluid AirMail")
 
     res1 = await db.execute(select(models.ThreadParticipant.thread_id).where(models.ThreadParticipant.user_id == current_user.id))
     user1_threads = set(res1.scalars().all())
@@ -1788,7 +1788,7 @@ async def send_chat(
     await db.refresh(msg)
 
     # ── Surya AI interception ─────────────────────────────────────────────────
-    if to_email == "surya@mailnet.ai":
+    if to_email == "surya@fluidairmail.ai":
         import asyncio
         try:
             # Build history from thread messages
@@ -1861,10 +1861,10 @@ async def get_conversations(
     db: AsyncSession = Depends(get_db),
 ):
     # Ensure Surya user exists
-    surya_res = await db.execute(select(models.User).where(models.User.email == "surya@mailnet.ai"))
+    surya_res = await db.execute(select(models.User).where(models.User.email == "surya@fluidairmail.ai"))
     surya_user = surya_res.scalars().first()
     if not surya_user:
-        surya_user = models.User(username="Surya", email="surya@mailnet.ai", hashed_password="disabled", is_admin=False)
+        surya_user = models.User(username="Surya", email="surya@fluidairmail.ai", hashed_password="disabled", is_admin=False)
         db.add(surya_user)
         await db.commit()
         await db.refresh(surya_user)
