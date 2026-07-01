@@ -90,7 +90,7 @@ interface Contact {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const API = 'http://127.0.0.1:8000';
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const AVATAR_COLORS = [
   '#3ea6ff', '#ea4335', '#34a853', '#fbbc05', '#ab47bc',

@@ -1,0 +1,11 @@
+node_modules
+.venv
+.venv2
+__pycache__
+.git
+.env
+dist
+build
+scratch
+*.sqlite3
+backend/mailnet.db
