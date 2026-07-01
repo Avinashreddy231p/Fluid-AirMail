@@ -1,6 +1,8 @@
 # Fluid AirMail — Advanced Secure Mail & Chat Network
 
 <div align="center">
+  <img src="assets/logo.png" alt="Fluid AirMail Logo" width="200" style="border-radius: 20px; margin-bottom: 20px;">
+  <br />
   <img alt="Fluid AirMail" src="https://img.shields.io/badge/Fluid_AirMail-v1.0.0-3ea6ff?style=flat-square">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi">
   <img alt="React" src="https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react">

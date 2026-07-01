@@ -77,7 +77,7 @@ export default function ForgotPassword() {
         </RouterLink>
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
-          <div style={{ color: 'var(--color-foreground)' }}><Mail size={42} strokeWidth={2.5} /></div>
+          <div style={{ color: 'var(--color-foreground)' }}><img src="/favicon.png" alt="Fluid AirMail Logo" style={{ width: '48px', height: '48px', borderRadius: '12px' }} /></div>
           <h1 className="apple-title">Account Recovery</h1>
           <p className="apple-subtitle">Recover access to your Fluid AirMail account.</p>
         </div>

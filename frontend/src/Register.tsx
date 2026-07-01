@@ -253,7 +253,7 @@ export default function Register() {
         {/* Header */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
           <div style={{ color: 'var(--color-foreground)' }}>
-            <Mail size={42} strokeWidth={2.5} />
+            <img src="/favicon.png" alt="Fluid AirMail Logo" style={{ width: '48px', height: '48px', borderRadius: '12px' }} />
           </div>
           <h1 className="fluid-title" style={{ fontSize: '28px' }}>Create Your Fluid AirMail Account</h1>
           <p className="fluid-subtitle" style={{ fontSize: '15px', maxWidth: '400px' }}>

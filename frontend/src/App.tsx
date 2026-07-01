@@ -2329,10 +2329,13 @@ function App() {
         overflowY: 'auto',
       }}>
         {/* Branding */}
-        <div style={{ padding: '4px 12px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-foreground)', letterSpacing: '-0.02em' }}>Fluid AirMail</div>
-          <div style={{ fontSize: '13px', color: 'var(--color-foreground-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {user?.email || 'Personal Account'}
+        <div style={{ padding: '4px 12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/favicon.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+          <div>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-foreground)', letterSpacing: '-0.02em' }}>Fluid AirMail</div>
+            <div style={{ fontSize: '13px', color: 'var(--color-foreground-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.email || 'Personal Account'}
+            </div>
           </div>
         </div>
 
