@@ -16,17 +16,17 @@
 
 ## 📸 Screenshots
 
-| Unified Inbox & AI Assistant | Action Center |
+| Fluid AirMail Interface | Dashboard & AI |
 | :---: | :---: |
-| <img src="assets/ai_assistant.png" alt="Inbox and AI Assistant" width="100%"> | <img src="assets/action_center.png" alt="Action Center" width="100%"> |
+| <img src="assets/shot1.png" alt="Fluid AirMail 1" width="100%"> | <img src="assets/shot2.png" alt="Fluid AirMail 2" width="100%"> |
 
-| Secure Compose & Templates                                     | Admin Dashboard                                                 |
-| :--------------------------------------------------------------:| :---------------------------------------------------------------:|
-| <img src="assets/compose.png" alt="Compose Mail" width="100%"> | <img src="assets/admin.png" alt="Admin Dashboard" width="100%"> |
-
-| Settings & Personalization | |
+| Advanced Compose | Smart Settings |
 | :---: | :---: |
-| <img src="assets/settings.png" alt="Settings" width="100%"> | |
+| <img src="assets/shot3.png" alt="Fluid AirMail 3" width="100%"> | <img src="assets/shot4.png" alt="Fluid AirMail 4" width="100%"> |
+
+| Admin Control | |
+| :---: | :---: |
+| <img src="assets/shot5.png" alt="Fluid AirMail 5" width="100%"> | |
 
 ---
 
