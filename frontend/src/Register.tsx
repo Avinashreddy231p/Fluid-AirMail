@@ -249,16 +249,16 @@ export default function Register() {
       boxSizing: 'border-box',
       background: 'var(--color-background)',
     }}>
-      <div className="apple-auth-container">
+      <div className="fluid-auth-container">
         {/* Header */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
           <div style={{ color: 'var(--color-foreground)' }}>
             <Mail size={42} strokeWidth={2.5} />
           </div>
-          <h1 className="apple-title" style={{ fontSize: '28px' }}>Create Your MailNet Account</h1>
-          <p className="apple-subtitle" style={{ fontSize: '15px', maxWidth: '400px' }}>
+          <h1 className="fluid-title" style={{ fontSize: '28px' }}>Create Your MailNet Account</h1>
+          <p className="fluid-subtitle" style={{ fontSize: '15px', maxWidth: '400px' }}>
             One MailNet Account is all you need to access all MailNet services. Already have a MailNet Account?{' '}
-            <RouterLink to="/login" className="apple-link">
+            <RouterLink to="/login" className="fluid-link">
               Sign In &rarr;
             </RouterLink>
           </p>
@@ -268,14 +268,14 @@ export default function Register() {
         {error && <ErrorCard error={error} onDismiss={() => setError('')} />}
 
         {/* Registration Form */}
-        <form onSubmit={handleSubmit} noValidate className="apple-form">
+        <form onSubmit={handleSubmit} noValidate className="fluid-form">
           
           {/* Name group */}
-          <div className="apple-fields-group">
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">First Name</span>
+          <div className="fluid-fields-group">
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">First Name</span>
                   <input
                     type="text"
                     placeholder="First Name"
@@ -283,13 +283,13 @@ export default function Register() {
                     onChange={(e) => setFirstName(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                   />
                 </div>
               </div>
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Last Name</span>
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Last Name</span>
                   <input
                     type="text"
                     placeholder="Last Name"
@@ -297,7 +297,7 @@ export default function Register() {
                     onChange={(e) => setLastName(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                   />
                 </div>
               </div>
@@ -305,36 +305,36 @@ export default function Register() {
           </div>
 
           {/* Country / Region */}
-          <div className="apple-form-section-title">Country / Region</div>
-          <div className="apple-field-standalone">
-            <div className="apple-input-wrapper">
-              <span className="apple-input-label">Country/Region</span>
+          <div className="fluid-form-section-title">Country / Region</div>
+          <div className="fluid-field-standalone">
+            <div className="fluid-input-wrapper">
+              <span className="fluid-input-label">Country/Region</span>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 disabled={loading}
-                className="apple-select"
+                className="fluid-select"
               >
                 {countries.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <span className="apple-select-icon">&#9662;</span>
+              <span className="fluid-select-icon">&#9662;</span>
             </div>
           </div>
 
           {/* Birthday */}
-          <div className="apple-form-section-title">Birthday</div>
-          <div className="apple-fields-group">
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Month</span>
+          <div className="fluid-form-section-title">Birthday</div>
+          <div className="fluid-fields-group">
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Month</span>
                   <select
                     value={birthMonth}
                     onChange={(e) => setBirthMonth(e.target.value)}
                     disabled={loading}
-                    className="apple-select"
+                    className="fluid-select"
                     required
                   >
                     <option value="" disabled hidden>Month</option>
@@ -342,17 +342,17 @@ export default function Register() {
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
-                  <span className="apple-select-icon">&#9662;</span>
+                  <span className="fluid-select-icon">&#9662;</span>
                 </div>
               </div>
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Day</span>
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Day</span>
                   <select
                     value={birthDay}
                     onChange={(e) => setBirthDay(e.target.value)}
                     disabled={loading}
-                    className="apple-select"
+                    className="fluid-select"
                     required
                   >
                     <option value="" disabled hidden>Day</option>
@@ -360,17 +360,17 @@ export default function Register() {
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
-                  <span className="apple-select-icon">&#9662;</span>
+                  <span className="fluid-select-icon">&#9662;</span>
                 </div>
               </div>
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Year</span>
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Year</span>
                   <select
                     value={birthYear}
                     onChange={(e) => setBirthYear(e.target.value)}
                     disabled={loading}
-                    className="apple-select"
+                    className="fluid-select"
                     required
                   >
                     <option value="" disabled hidden>Year</option>
@@ -378,19 +378,19 @@ export default function Register() {
                       <option key={y} value={y}>{y}</option>
                     ))}
                   </select>
-                  <span className="apple-select-icon">&#9662;</span>
+                  <span className="fluid-select-icon">&#9662;</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Credentials */}
-          <div className="apple-form-section-title">Account Credentials</div>
-          <div className="apple-fields-group">
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Email Address</span>
+          <div className="fluid-form-section-title">Account Credentials</div>
+          <div className="fluid-fields-group">
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Email Address</span>
                   <input
                     type="email"
                     placeholder="name@example.com"
@@ -398,16 +398,16 @@ export default function Register() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                     autoComplete="email"
                   />
                 </div>
               </div>
             </div>
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Password</span>
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Password</span>
                   <input
                     type="password"
                     placeholder="Password"
@@ -415,16 +415,16 @@ export default function Register() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                     autoComplete="new-password"
                   />
                 </div>
               </div>
             </div>
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Confirm Password</span>
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Confirm Password</span>
                   <input
                     type="password"
                     placeholder="Confirm Password"
@@ -432,7 +432,7 @@ export default function Register() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                     autoComplete="new-password"
                   />
                 </div>
@@ -441,31 +441,31 @@ export default function Register() {
           </div>
 
           {/* Security Question */}
-          <div className="apple-form-section-title">Account Recovery</div>
-          <div className="apple-fields-group">
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Security Question</span>
+          <div className="fluid-form-section-title">Account Recovery</div>
+          <div className="fluid-fields-group">
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Security Question</span>
                   <select
                     value={securityQuestion}
                     onChange={(e) => setSecurityQuestion(e.target.value)}
                     disabled={loading}
-                    className="apple-select"
+                    className="fluid-select"
                   >
                     <option value="What was the name of your first pet?">What was the name of your first pet?</option>
                     <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
                     <option value="What was the make and model of your first car?">What was the make and model of your first car?</option>
                     <option value="What was the name of your elementary school?">What was the name of your elementary school?</option>
                   </select>
-                  <span className="apple-select-icon">&#9662;</span>
+                  <span className="fluid-select-icon">&#9662;</span>
                 </div>
               </div>
             </div>
-            <div className="apple-field-row">
-              <div className="apple-field-col">
-                <div className="apple-input-wrapper">
-                  <span className="apple-input-label">Answer</span>
+            <div className="fluid-field-row">
+              <div className="fluid-field-col">
+                <div className="fluid-input-wrapper">
+                  <span className="fluid-input-label">Answer</span>
                   <input
                     type="text"
                     placeholder="Security Answer"
@@ -473,7 +473,7 @@ export default function Register() {
                     onChange={(e) => setSecurityAnswer(e.target.value)}
                     required
                     disabled={loading}
-                    className="apple-input"
+                    className="fluid-input"
                   />
                 </div>
               </div>
@@ -481,10 +481,10 @@ export default function Register() {
           </div>
 
           {/* Interactive Captcha Section */}
-          <div className="apple-form-section-title">Security Verification</div>
+          <div className="fluid-form-section-title">Security Verification</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div className="apple-captcha-container">
-              <div className="apple-captcha-visual">
+            <div className="fluid-captcha-container">
+              <div className="fluid-captcha-visual">
                 <canvas
                   ref={canvasRef}
                   width="160"
@@ -492,11 +492,11 @@ export default function Register() {
                   style={{ display: 'block' }}
                 />
               </div>
-              <div className="apple-captcha-actions">
+              <div className="fluid-captcha-actions">
                 <button
                   type="button"
                   onClick={handleRefreshCaptcha}
-                  className="apple-captcha-btn"
+                  className="fluid-captcha-btn"
                   title="Generate new image code"
                 >
                   <RefreshCw size={14} />
@@ -505,7 +505,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={speakCaptcha}
-                  className="apple-captcha-btn"
+                  className="fluid-captcha-btn"
                   title="Read characters out loud"
                 >
                   <Volume2 size={14} />
@@ -514,9 +514,9 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="apple-field-standalone">
-              <div className="apple-input-wrapper">
-                <span className="apple-input-label">Security Captcha Code</span>
+            <div className="fluid-field-standalone">
+              <div className="fluid-input-wrapper">
+                <span className="fluid-input-label">Security Captcha Code</span>
                 <input
                   type="text"
                   placeholder="Type the characters in the image"
@@ -524,7 +524,7 @@ export default function Register() {
                   onChange={(e) => setCaptchaInput(e.target.value)}
                   required
                   disabled={loading}
-                  className="apple-input"
+                  className="fluid-input"
                   style={{ textTransform: 'uppercase' }}
                 />
               </div>
@@ -535,7 +535,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="apple-btn-continue"
+            className="fluid-btn-continue"
             style={{ marginTop: '20px' }}
           >
             {loading ? (
@@ -553,11 +553,11 @@ export default function Register() {
         </form>
 
         {/* Privacy Footer */}
-        <div className="apple-privacy-footer" style={{ marginTop: '12px' }}>
-          <svg className="apple-privacy-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <div className="fluid-privacy-footer" style={{ marginTop: '12px' }}>
+          <svg className="fluid-privacy-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
           </svg>
-          <p className="apple-privacy-text">
+          <p className="fluid-privacy-text">
             Your MailNet Account information is used to allow you to sign in securely and access your data. MailNet records certain data for security, support and reporting purposes. See how your data is managed...
           </p>
         </div>

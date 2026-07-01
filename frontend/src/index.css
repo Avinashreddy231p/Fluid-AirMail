@@ -857,9 +857,9 @@ html.dark .glass-panel {
   overflow: hidden;
 }
 
-/* ── Apple Account Redesign Styles ────────────────────────────────────────── */
+/* ── Fluid Account Styles ────────────────────────────────────────── */
 
-.apple-auth-container {
+.fluid-auth-container {
   width: 100%;
   max-width: 420px;
   padding: 40px 20px;
@@ -873,7 +873,7 @@ html.dark .glass-panel {
   margin: 0 auto;
 }
 
-.apple-logo-container {
+.fluid-logo-container {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -888,7 +888,7 @@ html.dark .glass-panel {
   transition: transform 0.3s ease;
 }
 
-.apple-logo-container::after {
+.fluid-logo-container::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -896,11 +896,11 @@ html.dark .glass-panel {
   pointer-events: none;
 }
 
-.apple-logo-container:hover {
+.fluid-logo-container:hover {
   transform: translateY(-2px) scale(1.03);
 }
 
-.apple-title {
+.fluid-title {
   font-size: 32px;
   font-weight: 700;
   color: var(--color-foreground);
@@ -909,7 +909,7 @@ html.dark .glass-panel {
   text-align: center;
 }
 
-.apple-subtitle {
+.fluid-subtitle {
   font-size: 16px;
   color: var(--color-foreground-secondary);
   line-height: 1.45;
@@ -917,24 +917,24 @@ html.dark .glass-panel {
   margin-top: 8px;
 }
 
-.apple-link {
+.fluid-link {
   color: #0071e3;
   text-decoration: none;
   font-weight: 500;
   transition: text-decoration 0.2s ease;
 }
 
-.apple-link:hover {
+.fluid-link:hover {
   text-decoration: underline;
 }
 
-.apple-form {
+.fluid-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.apple-form-section-title {
+.fluid-form-section-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-foreground-secondary);
@@ -946,7 +946,7 @@ html.dark .glass-panel {
 }
 
 /* Grouped Form Fields (iOS Style) */
-.apple-fields-group {
+.fluid-fields-group {
   border: 1px solid rgba(120, 120, 128, 0.2);
   border-radius: 12px;
   overflow: hidden;
@@ -954,73 +954,73 @@ html.dark .glass-panel {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.apple-fields-group:focus-within {
+.fluid-fields-group:focus-within {
   border-color: #0071e3;
   box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.light) .apple-fields-group {
+  html:not(.light) .fluid-fields-group {
     background: #1c1c1e;
     border-color: rgba(84, 84, 88, 0.4);
   }
 }
 
-html.dark .apple-fields-group {
+html.dark .fluid-fields-group {
   background: #1c1c1e;
   border-color: rgba(84, 84, 88, 0.4);
 }
 
-.apple-field-row {
+.fluid-field-row {
   display: flex;
   border-bottom: 1px solid rgba(120, 120, 128, 0.15);
 }
 
-.apple-field-row:last-child {
+.fluid-field-row:last-child {
   border-bottom: none;
 }
 
-.apple-field-col {
+.fluid-field-col {
   flex: 1;
   position: relative;
 }
 
-.apple-field-col:not(:last-child) {
+.fluid-field-col:not(:last-child) {
   border-right: 1px solid rgba(120, 120, 128, 0.15);
 }
 
 /* Individual fields outside groups */
-.apple-field-standalone {
+.fluid-field-standalone {
   border: 1px solid rgba(120, 120, 128, 0.2);
   border-radius: 12px;
   background: var(--color-background);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.apple-field-standalone:focus-within {
+.fluid-field-standalone:focus-within {
   border-color: #0071e3;
   box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.light) .apple-field-standalone {
+  html:not(.light) .fluid-field-standalone {
     background: #1c1c1e;
     border-color: rgba(84, 84, 88, 0.4);
   }
 }
 
-html.dark .apple-field-standalone {
+html.dark .fluid-field-standalone {
   background: #1c1c1e;
   border-color: rgba(84, 84, 88, 0.4);
 }
 
 /* Label & Input styling */
-.apple-input-wrapper {
+.fluid-input-wrapper {
   position: relative;
   width: 100%;
 }
 
-.apple-input-label {
+.fluid-input-label {
   position: absolute;
   top: 8px;
   left: 16px;
@@ -1032,7 +1032,7 @@ html.dark .apple-field-standalone {
   letter-spacing: 0.02em;
 }
 
-.apple-input {
+.fluid-input {
   width: 100%;
   border: none;
   background: transparent;
@@ -1044,18 +1044,18 @@ html.dark .apple-field-standalone {
   box-sizing: border-box;
 }
 
-.apple-input::placeholder {
+.fluid-input::placeholder {
   color: var(--color-foreground-tertiary);
   opacity: 0.8;
 }
 
-.apple-input:disabled {
+.fluid-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Select inputs */
-.apple-select {
+.fluid-select {
   width: 100%;
   border: none;
   background: transparent;
@@ -1069,12 +1069,12 @@ html.dark .apple-field-standalone {
   box-sizing: border-box;
 }
 
-.apple-select option {
+.fluid-select option {
   background: var(--color-background-elevated);
   color: var(--color-foreground);
 }
 
-.apple-select-icon {
+.fluid-select-icon {
   position: absolute;
   right: 16px;
   bottom: 12px;
@@ -1083,12 +1083,12 @@ html.dark .apple-field-standalone {
   transition: transform 0.2s ease;
 }
 
-.apple-select:focus + .apple-select-icon {
+.fluid-select:focus + .fluid-select-icon {
   transform: rotate(180deg);
 }
 
-/* Standard button matching Apple's blue Continue button */
-.apple-btn-continue {
+/* Standard button matching Fluid's blue Continue button */
+.fluid-btn-continue {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1106,17 +1106,17 @@ html.dark .apple-field-standalone {
   box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
 }
 
-.apple-btn-continue:hover {
+.fluid-btn-continue:hover {
   background-color: #0077ed;
   box-shadow: 0 6px 16px rgba(0, 113, 227, 0.3);
 }
 
-.apple-btn-continue:active {
+.fluid-btn-continue:active {
   background-color: #0062c2;
   transform: scale(0.985);
 }
 
-.apple-btn-continue:disabled {
+.fluid-btn-continue:disabled {
   background-color: #a4cbf3;
   box-shadow: none;
   cursor: not-allowed;
@@ -1124,19 +1124,19 @@ html.dark .apple-field-standalone {
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.light) .apple-btn-continue:disabled {
+  html:not(.light) .fluid-btn-continue:disabled {
     background-color: #00366d;
     color: rgba(255, 255, 255, 0.4);
   }
 }
 
-html.dark .apple-btn-continue:disabled {
+html.dark .fluid-btn-continue:disabled {
   background-color: #00366d;
   color: rgba(255, 255, 255, 0.4);
 }
 
 /* Radios and Checkboxes Custom styling */
-.apple-radio-label, .apple-checkbox-label {
+.fluid-radio-label, .fluid-checkbox-label {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1148,20 +1148,20 @@ html.dark .apple-btn-continue:disabled {
   padding: 4px 0;
 }
 
-.apple-radio-description {
+.fluid-radio-description {
   font-size: 13px;
   color: var(--color-foreground-secondary);
   margin-top: 2px;
 }
 
-.apple-radio-input {
+.fluid-radio-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.apple-radio-custom {
+.fluid-radio-custom {
   position: relative;
   width: 20px;
   height: 20px;
@@ -1173,12 +1173,12 @@ html.dark .apple-btn-continue:disabled {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.apple-radio-input:checked + .apple-radio-custom {
+.fluid-radio-input:checked + .fluid-radio-custom {
   border-color: #0071e3;
   background-color: #0071e3;
 }
 
-.apple-radio-custom::after {
+.fluid-radio-custom::after {
   content: '';
   position: absolute;
   display: none;
@@ -1191,18 +1191,18 @@ html.dark .apple-btn-continue:disabled {
   transform: translate(-50%, -50%);
 }
 
-.apple-radio-input:checked + .apple-radio-custom::after {
+.fluid-radio-input:checked + .fluid-radio-custom::after {
   display: block;
 }
 
-.apple-checkbox-input {
+.fluid-checkbox-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.apple-checkbox-custom {
+.fluid-checkbox-custom {
   position: relative;
   width: 20px;
   height: 20px;
@@ -1214,12 +1214,12 @@ html.dark .apple-btn-continue:disabled {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.apple-checkbox-input:checked + .apple-checkbox-custom {
+.fluid-checkbox-input:checked + .fluid-checkbox-custom {
   border-color: #0071e3;
   background-color: #0071e3;
 }
 
-.apple-checkbox-custom::after {
+.fluid-checkbox-custom::after {
   content: '';
   position: absolute;
   display: none;
@@ -1232,19 +1232,19 @@ html.dark .apple-btn-continue:disabled {
   transform: rotate(45deg);
 }
 
-.apple-checkbox-input:checked + .apple-checkbox-custom::after {
+.fluid-checkbox-input:checked + .fluid-checkbox-custom::after {
   display: block;
 }
 
 /* Captcha styling */
-.apple-captcha-container {
+.fluid-captcha-container {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
 
-.apple-captcha-visual {
+.fluid-captcha-visual {
   border: 1px solid rgba(120, 120, 128, 0.2);
   border-radius: 10px;
   background: #fbfbfd;
@@ -1254,24 +1254,24 @@ html.dark .apple-btn-continue:disabled {
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.light) .apple-captcha-visual {
+  html:not(.light) .fluid-captcha-visual {
     background: #2c2c2e;
     border-color: rgba(84, 84, 88, 0.4);
   }
 }
 
-html.dark .apple-captcha-visual {
+html.dark .fluid-captcha-visual {
   background: #2c2c2e;
   border-color: rgba(84, 84, 88, 0.4);
 }
 
-.apple-captcha-actions {
+.fluid-captcha-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.apple-captcha-btn {
+.fluid-captcha-btn {
   background: transparent;
   border: none;
   color: #0071e3;
@@ -1286,12 +1286,12 @@ html.dark .apple-captcha-visual {
   transition: background-color 0.15s ease;
 }
 
-.apple-captcha-btn:hover {
+.fluid-captcha-btn:hover {
   background-color: rgba(0, 113, 227, 0.08);
 }
 
 /* Footer & Legal */
-.apple-privacy-footer {
+.fluid-privacy-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1301,12 +1301,12 @@ html.dark .apple-captcha-visual {
   border-top: 1px solid rgba(120, 120, 128, 0.15);
 }
 
-.apple-privacy-icon {
+.fluid-privacy-icon {
   color: #0071e3;
   opacity: 0.85;
 }
 
-.apple-privacy-text {
+.fluid-privacy-text {
   font-size: 12px;
   color: var(--color-foreground-secondary);
   line-height: 1.5;
@@ -2456,7 +2456,7 @@ html.dark .att-pill-recv {
 .att-text-icon  { background: rgba(107, 114, 128, 0.18); color: #6b7280; }
 
 /* ── Apple Mail HTML Content ───────────────────────────────────────────── */
-.apple-mail-content {
+.fluid-mail-content {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.6;
@@ -2464,62 +2464,62 @@ html.dark .att-pill-recv {
   word-wrap: break-word;
 }
 
-.apple-mail-content h1,
-.apple-mail-content h2,
-.apple-mail-content h3,
-.apple-mail-content h4 {
+.fluid-mail-content h1,
+.fluid-mail-content h2,
+.fluid-mail-content h3,
+.fluid-mail-content h4 {
   font-weight: 600;
   margin-top: 1.5em;
   margin-bottom: 0.5em;
   line-height: 1.3;
 }
 
-.apple-mail-content p {
+.fluid-mail-content p {
   margin-top: 0;
   margin-bottom: 1em;
 }
 
-.apple-mail-content a {
+.fluid-mail-content a {
   color: var(--color-primary);
   text-decoration: none;
 }
 
-.apple-mail-content a:hover {
+.fluid-mail-content a:hover {
   text-decoration: underline;
 }
 
-.apple-mail-content blockquote {
+.fluid-mail-content blockquote {
   margin: 1em 0;
   padding-left: 1em;
   border-left: 3px solid var(--color-divider);
   color: var(--color-foreground-secondary);
 }
 
-.apple-mail-content ul,
-.apple-mail-content ol {
+.fluid-mail-content ul,
+.fluid-mail-content ol {
   margin: 0 0 1em 0;
   padding-left: 2em;
 }
 
-.apple-mail-content table {
+.fluid-mail-content table {
   border-collapse: collapse;
   width: 100%;
   margin: 1em 0;
 }
 
-.apple-mail-content th,
-.apple-mail-content td {
+.fluid-mail-content th,
+.fluid-mail-content td {
   border: 1px solid var(--color-divider);
   padding: 8px 12px;
   text-align: left;
 }
 
-.apple-mail-content th {
+.fluid-mail-content th {
   background: var(--color-background-elevated);
   font-weight: 600;
 }
 
-.apple-mail-content img {
+.fluid-mail-content img {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
@@ -3527,4 +3527,31 @@ html.dark .att-pill-recv {
 .template-editor-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .layout-container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+  }
+  .inbox-list {
+    width: 100%;
+    border-right: none;
+    height: 40vh;
+  }
+  .mail-viewer {
+    height: 60vh;
+  }
+  .compose-modal {
+    width: 95%;
+    max-width: none;
+    height: 90vh;
+  }
 }

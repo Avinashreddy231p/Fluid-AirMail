@@ -42,7 +42,7 @@
 
 ### 📧 Mail & Communication
 * **Unified Inbox**: View both standard email-style threads and real-time chat messages in a single interface.
-* **WebRTC Voice Calling**: Built-in peer-to-peer secure voice calling directly from the application.
+* ****: Built-in peer-to-peer secure voice calling directly from the application.
 * **Read Receipts**: Real-time status updates for sent messages.
 * **Drafts, CC & BCC**: Fully featured mail composing with rich text, carbon copying, and draft saving.
 * **Organization**: Star messages, filter by Inbox, Chats, Sent, Starred, or Snoozed, and manage your contacts book.
@@ -208,7 +208,7 @@ All authenticated endpoints require an `Authorization: Bearer <token>` header.
 - [ ] File attachments (end-to-end encrypted storage)
 - [ ] Per-user public-key encryption (E2EE)
 - [ ] PostgreSQL migration with Alembic
-- [ ] Mobile responsive design
+- [x] Mobile responsive design
 
 ---
 

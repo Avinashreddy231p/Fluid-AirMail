@@ -331,7 +331,7 @@ async def get_available_models(provider: str, key: str) -> list[dict]:
 
 async def generate_chat_suggestions(user, history_text: str) -> list[str]:
     if not history_text.strip(): return ["Hi!", "How are you?", "What's up?"]
-    prompt = f"""You are an Apple Intelligence style auto-reply assistant.
+    prompt = f"""You are an Fluid Intelligence style auto-reply assistant.
 Analyze this chat history and suggest 3 short, natural, context-aware quick replies for the user to send next.
 Return ONLY a valid JSON array of strings, e.g. ["Sure thing!", "I can do that", "No problem"].
 

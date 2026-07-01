@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Inbox, MessageSquare, Star, Settings as SettingsIcon, Shield, Search, Plus, 
-  Phone, PhoneOff, Mic, MicOff, Users, Mail, Layers, Sun, LogOut, X, 
+  Users, Mail, Layers, Sun, LogOut, X, 
   RefreshCw, Loader2, ArrowLeft, Reply, Forward, Trash2, UserPlus, Check, 
   AlertCircle, Wifi, Folder, FolderPlus, Tag as TagIcon, Paperclip, ChevronLeft, Sparkles,
   Zap, FileText, Clock, Calendar as CalendarIcon, CheckSquare, CheckCircle
@@ -90,7 +90,7 @@ interface Contact {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API = (import.meta as any).env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const AVATAR_COLORS = [
   '#3ea6ff', '#ea4335', '#34a853', '#fbbc05', '#ab47bc',
@@ -1720,266 +1720,6 @@ function App() {
     return () => clearInterval(interval);
   }, [token, API]);
 
-  // ── Call States & WebRTC ref managers ──────────────────────────────────────
-  const [callState, setCallState] = useState<'idle' | 'calling' | 'incoming' | 'connected' | 'ended'>('idle');
-  const [callPartner, setCallPartner] = useState<{ name: string; email: string } | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-
-  const callWsRef = useRef<WebSocket | null>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
-  const callPartnerRef = useRef<{ name: string; email: string } | null>(null);
-  const offerRef = useRef<any>(null);
-
-  const rtcConfig = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' }
-    ]
-  };
-
-  const startCallTimer = () => {
-    if (callTimerRef.current) clearInterval(callTimerRef.current);
-    setCallDuration(0);
-    callTimerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-  };
-
-  const stopCallTimer = () => {
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-      callTimerRef.current = null;
-    }
-  };
-
-  const handleEndCall = useCallback(() => {
-    stopCallTimer();
-    setCallState('idle');
-    setCallPartner(null);
-    callPartnerRef.current = null;
-    offerRef.current = null;
-    setIsMuted(false);
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
-
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-  }, []);
-
-  const initiateCall = async (email: string, name: string) => {
-    if (callState !== 'idle') return;
-    setCallPartner({ name, email });
-    callPartnerRef.current = { name, email };
-    setCallState('calling');
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-
-      const pc = new RTCPeerConnection(rtcConfig);
-      pcRef.current = pc;
-
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate && callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-          callWsRef.current.send(JSON.stringify({
-            type: "ice_candidate",
-            target_email: email,
-            candidate: event.candidate
-          }));
-        }
-      };
-
-      pc.ontrack = (event) => {
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = event.streams[0];
-          remoteAudioRef.current.play().catch(e => console.error("Error playing remote audio:", e));
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      if (callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-        callWsRef.current.send(JSON.stringify({
-          type: "call_user",
-          target_email: email,
-          offer: offer
-        }));
-      } else {
-        setToast("Call failed: Signaling server offline");
-        handleEndCall();
-      }
-    } catch (err: any) {
-      console.error("Error initiating call:", err);
-      setToast("Microphone access is required to make calls.");
-      handleEndCall();
-    }
-  };
-
-  const acceptIncomingCall = async () => {
-    if (callState !== 'incoming' || !callPartnerRef.current || !offerRef.current) return;
-    const partner = callPartnerRef.current;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-
-      const pc = new RTCPeerConnection(rtcConfig);
-      pcRef.current = pc;
-
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate && callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-          callWsRef.current.send(JSON.stringify({
-            type: "ice_candidate",
-            target_email: partner.email,
-            candidate: event.candidate
-          }));
-        }
-      };
-
-      pc.ontrack = (event) => {
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = event.streams[0];
-          remoteAudioRef.current.play().catch(e => console.error("Error playing remote audio:", e));
-        }
-      };
-
-      await pc.setRemoteDescription(new RTCSessionDescription(offerRef.current));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      if (callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-        callWsRef.current.send(JSON.stringify({
-          type: "accept_call",
-          caller_email: partner.email,
-          answer: answer
-        }));
-        setCallState('connected');
-        startCallTimer();
-      } else {
-        setToast("Connection failed");
-        handleEndCall();
-      }
-    } catch (err: any) {
-      console.error("Error accepting call:", err);
-      setToast("Microphone access is required to accept calls.");
-      declineIncomingCall();
-    }
-  };
-
-  const declineIncomingCall = () => {
-    if (callState !== 'incoming' || !callPartnerRef.current) return;
-    const partner = callPartnerRef.current;
-
-    if (callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-      callWsRef.current.send(JSON.stringify({
-        type: "decline_call",
-        caller_email: partner.email
-      }));
-    }
-    handleEndCall();
-  };
-
-  const hangUpCall = () => {
-    if (callPartnerRef.current && callWsRef.current && callWsRef.current.readyState === WebSocket.OPEN) {
-      callWsRef.current.send(JSON.stringify({
-        type: "hang_up",
-        target_email: callPartnerRef.current.email
-      }));
-    }
-    handleEndCall();
-  };
-
-  const toggleMute = () => {
-    if (localStreamRef.current) {
-      const newMute = !isMuted;
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = !newMute;
-      });
-      setIsMuted(newMute);
-    }
-  };
-
-  // Connect to Signaling WebSocket
-  useEffect(() => {
-    if (!token || !user) return;
-
-    const wsUrl = `${API.replace('http://', 'ws://').replace('localhost', '127.0.0.1')}/call/ws?token=${token}`;
-    const ws = new WebSocket(wsUrl);
-    callWsRef.current = ws;
-
-    ws.onmessage = async (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        console.log("Signaling WebSocket message:", msg);
-
-        switch (msg.type) {
-          case "incoming_call":
-            setCallPartner({ name: msg.caller_name, email: msg.caller_email });
-            callPartnerRef.current = { name: msg.caller_name, email: msg.caller_email };
-            offerRef.current = msg.offer;
-            setCallState('incoming');
-            break;
-
-          case "call_accepted":
-            if (pcRef.current) {
-              await pcRef.current.setRemoteDescription(new RTCSessionDescription(msg.answer));
-              setCallState('connected');
-              startCallTimer();
-            }
-            break;
-
-          case "call_declined":
-            setToast("Call declined");
-            handleEndCall();
-            break;
-
-          case "ice_candidate":
-            if (pcRef.current) {
-              await pcRef.current.addIceCandidate(new RTCIceCandidate(msg.candidate));
-            }
-            break;
-
-          case "call_ended":
-            setToast("Call ended");
-            handleEndCall();
-            break;
-
-          case "call_failed":
-            setToast(`Call failed: ${msg.reason}`);
-            handleEndCall();
-            break;
-
-          default:
-            break;
-        }
-      } catch (e) {
-        console.error("Error parsing WS signal:", e);
-      }
-    };
-
-    ws.onclose = () => {
-      console.log("Signaling WebSocket closed");
-      callWsRef.current = null;
-    };
-
-    return () => {
-      ws.close();
-      handleEndCall();
-    };
-  }, [token, user, handleEndCall]);
 
   // Track the highest mail id seen so polling only fetches new ones
   const lastMailId = useRef(0);
@@ -2999,7 +2739,7 @@ function App() {
                     onSendMessage={handleSendChatMessage}
                     onReadMessages={handleChatRead}
                     onAddContact={handleSaveContact}
-                    onVoiceCall={initiateCall}
+                    
                     API={API}
                     token={token || ''}
                   />
@@ -3081,61 +2821,6 @@ function App() {
         />
       )}
 
-      {/* Voice Call Overlay */}
-      {callState !== 'idle' && callPartner && (
-        <div className="call-overlay">
-          <div className="call-card">
-            <div className="call-avatar" style={{ backgroundColor: colorFor(callPartner.name) }}>
-              {callPartner.name.charAt(0).toUpperCase()}
-            </div>
-            <h2 className="call-partner-name">{callPartner.name}</h2>
-            <p className="call-partner-email">{callPartner.email}</p>
-
-            {callState === 'calling' && (
-              <div className="call-status pulse">Calling...</div>
-            )}
-            {callState === 'incoming' && (
-              <div className="call-status pulse">Incoming Voice Call...</div>
-            )}
-            {callState === 'connected' && (
-              <div className="call-status-connected">
-                <span className="call-timer">
-                  {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
-                  {(callDuration % 60).toString().padStart(2, '0')}
-                </span>
-                <span className="call-status-active">Connected</span>
-              </div>
-            )}
-
-            <div className="call-actions-row">
-              {callState === 'incoming' ? (
-                <>
-                  <button className="call-btn accept" onClick={acceptIncomingCall} aria-label="Accept Call">
-                    <Phone size={22} />
-                  </button>
-                  <button className="call-btn decline" onClick={declineIncomingCall} aria-label="Decline Call">
-                    <PhoneOff size={22} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  {callState === 'connected' && (
-                    <button className={`call-btn mute ${isMuted ? 'active' : ''}`} onClick={toggleMute} aria-label={isMuted ? "Unmute Microphone" : "Mute Microphone"}>
-                      {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
-                    </button>
-                  )}
-                  <button className="call-btn hangup" onClick={hangUpCall} aria-label="Hang Up">
-                    <PhoneOff size={22} />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden audio element */}
-      <audio ref={remoteAudioRef} style={{ display: 'none' }} autoPlay />
 
       {/* Toast notifications */}
       {toast && (
