@@ -11,7 +11,7 @@ import ChatView, { Conversation, ContactHint } from './ChatView';
 import SettingsView from './SettingsView';
 import AdminView from './AdminView';
 import AiActionCenter, { Message as AiMessage } from './AiActionCenter';
-import HowToUseModal from './HowToUseModal';
+import { Joyride, Step } from 'react-joyride';
 import LibraryView from './LibraryView';
 import ActionDashboard from './ActionDashboard';
 import TemplatesView from './TemplatesView';
@@ -2615,7 +2615,7 @@ function App() {
       <div style={{ display: 'flex', height: '100vh', width: '100%', background: 'var(--color-background)', overflow: 'hidden' }}>
 
       {/* ═══ Sidebar ═══ */}
-      <aside style={{
+      <aside className="tour-sidebar" style={{
         width: '240px', height: '100vh',
         background: 'var(--color-background-secondary)',
         display: 'flex', flexDirection: 'column',
@@ -2632,7 +2632,7 @@ function App() {
         </div>
 
         {/* Compose */}
-        <button className="ios-button" style={{ width: '100%', marginBottom: '12px', padding: '10px 16px' }} onClick={() => openCompose()}>
+        <button className="ios-button tour-compose" style={{ width: '100%', marginBottom: '12px', padding: '10px 16px' }} onClick={() => openCompose()}>
           <Plus size={18} /> Compose
         </button>
 
@@ -2648,6 +2648,21 @@ function App() {
           {sidebarNav.filter(n => n.id === 'settings' || n.id === 'admin').map(item => (
             <SidebarItem key={item.id} item={item} />
           ))}
+          <button
+            onClick={() => setShowTutorial(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              width: '100%', padding: '8px 12px', borderRadius: '9999px',
+              border: 'none', cursor: 'pointer', background: 'transparent',
+              color: 'var(--color-primary)', fontSize: '15px', fontWeight: 500,
+              fontFamily: 'inherit', textAlign: 'left', marginTop: '4px',
+              transition: 'background 0.15s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = 'var(--color-foreground-quaternary)')}
+            onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Zap size={18} /> Walkthrough
+          </button>
           <button
             onClick={handleLogout}
             style={{
@@ -2678,7 +2693,7 @@ function App() {
           flexShrink: 0, position: 'sticky', top: 0, zIndex: 40,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+            <div className="tour-search" style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: semanticSearch ? 'var(--color-primary)' : 'var(--color-foreground-secondary)' }} />
               <input
                 className="ios-input"
@@ -2725,6 +2740,7 @@ function App() {
               <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
             </button>
             <button
+              className="tour-ai"
               onClick={() => setShowEcosystem(!showEcosystem)}
               style={{
                 background: showEcosystem ? 'var(--color-primary)' : 'var(--color-background-secondary)',
@@ -2752,7 +2768,7 @@ function App() {
 
           {/* Mail feed column */}
           {activeSection !== 'chats' && activeSection !== 'settings' && activeSection !== 'admin' && activeSection !== 'contacts' && activeSection !== 'library' && activeSection !== 'dashboard' && activeSection !== 'templates' && activeSection !== 'calendar' && activeSection !== 'tasks' && activeSection !== 'notes' && (
-            <aside style={{
+            <aside className="tour-sidebar" style={{
               width: '360px', flexShrink: 0,
               display: 'flex', flexDirection: 'column',
               borderRight: '1px solid var(--color-divider)',
@@ -2850,7 +2866,7 @@ function App() {
                   <p style={{ fontSize: '17px', fontWeight: 500 }}>{searchQuery ? 'No results found' : 'Nothing here yet'}</p>
                 </div>
               ) : (
-                <div style={{ padding: '4px 12px 12px' }}>
+                <div className="tour-inbox" style={{ padding: '4px 12px 12px' }}>
                   {filteredMessages.map((item) => {
                     const isActive = selectedMsg?.id === item.id;
                     const isUnread = !item.read && !item.fromMe;
@@ -3127,7 +3143,13 @@ function App() {
       )}
 
       {/* Tutorial Modal */}
-      {showTutorial && <HowToUseModal onClose={dismissTutorial} />}
+            <Joyride 
+        steps={tourSteps} 
+        run={showTutorial} 
+        continuous 
+         
+        
+/>
       {/* Floating AI Action Center Button */}
       <button
         onClick={() => setShowAiActionCenter(true)}
@@ -3194,5 +3216,34 @@ function App() {
     </AttachmentPreviewProvider>
   );
 };
+
+
+const tourSteps: Step[] = [
+  {
+    target: 'body',
+    content: 'Welcome to Fluid AirMail! Let\'s take a quick tour of your new workspace.',
+    placement: 'center',
+  },
+  {
+    target: '.tour-compose',
+    content: 'Click here to draft powerful emails with CC/BCC, templates, and Apple Intelligence tools.',
+  },
+  {
+    target: '.tour-sidebar',
+    content: 'Navigate between your Inbox, Drafts, Chats, and custom folders here.',
+  },
+  {
+    target: '.tour-search',
+    content: 'Use the search bar to find emails instantly. Click the sparkle icon to use AI Semantic Search!',
+  },
+  {
+    target: '.tour-inbox',
+    content: 'This is your message list. Emails update in real-time, and you can see read-receipts instantly!',
+  },
+  {
+    target: '.tour-ai',
+    content: 'Open the AI Action Center to summarize emails, ask questions about your inbox, or find attachments quickly.',
+  }
+];
 
 export default App;

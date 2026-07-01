@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload, aliased
 from sqlalchemy import or_, and_, text
 from jose import jwt, JWTError
 from datetime import timedelta, datetime
-from typing import Optional
+from typing import Optional, List
 import json
 import asyncio
 import httpx
@@ -60,6 +60,22 @@ async def lifespan(app: FastAPI):
             pass
         try:
             await conn.execute(text("ALTER TABLE calendar_events ADD COLUMN task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE mails ADD COLUMN cc_emails TEXT"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE mails ADD COLUMN bcc_emails TEXT"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE mails ADD COLUMN status VARCHAR DEFAULT 'sent'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE mails ADD COLUMN parent_id INTEGER REFERENCES mails(id) ON DELETE SET NULL"))
         except Exception:
             pass
     async with AsyncSessionLocal() as session:
@@ -209,10 +225,14 @@ class UserOut(BaseModel):
 class MailSend(BaseModel):
     to_email: str
     to_name: str = ""
+    cc_emails: Optional[List[str]] = None
+    bcc_emails: Optional[List[str]] = None
     subject: str = ""
     body: str
     attachment_url: Optional[str] = None
-    attachment_urls: Optional[list[str]] = None
+    attachment_urls: Optional[List[str]] = None
+    is_draft: bool = False
+    parent_id: Optional[int] = None
 
 
 class MailStar(BaseModel):
@@ -459,6 +479,20 @@ def _mail_to_dict(mail: models.Mail, current_user_id: int) -> dict:
         except Exception:
             attachment_urls = [mail.attachment_url]
 
+    # Parse CC/BCC from JSON strings
+    cc_list = []
+    bcc_list = []
+    try:
+        if mail.cc_emails:
+            cc_list = json.loads(mail.cc_emails) if isinstance(mail.cc_emails, str) else mail.cc_emails
+    except Exception:
+        pass
+    try:
+        if mail.bcc_emails:
+            bcc_list = json.loads(mail.bcc_emails) if isinstance(mail.bcc_emails, str) else mail.bcc_emails
+    except Exception:
+        pass
+
     return {
         "id":           mail.id,
         "from_me":      from_me,
@@ -466,6 +500,8 @@ def _mail_to_dict(mail: models.Mail, current_user_id: int) -> dict:
         "sender_email": sender_email,
         "to_name":      to_name,
         "to_email":     to_email,
+        "cc_emails":    cc_list,
+        "bcc_emails":   bcc_list if from_me else [],  # Only sender sees BCC
         "subject":      mail.subject or "",
         "body":         body,
         "snippet":      snippet,
@@ -473,12 +509,14 @@ def _mail_to_dict(mail: models.Mail, current_user_id: int) -> dict:
         "starred":      mail.starred,
         "read":         mail.read,
         "category":     mail.category,
+        "status":       getattr(mail, 'status', 'sent') or 'sent',
         "is_trashed":   mail.is_trashed,
         "tags":         user_tags,
         "folder_id":    folder_id,
         "attachment_url": attachment_urls[0] if attachment_urls else None,
         "attachment_urls": attachment_urls,
         "ai_summary":   mail.ai_summary,
+        "parent_id":    getattr(mail, 'parent_id', None),
     }
 
 
@@ -964,25 +1002,36 @@ async def send_mail(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Send a mail.  If the recipient email belongs to a registered MailNet user,
+    Send a mail (or save a draft if is_draft=True).
+    If the recipient email belongs to a registered MailNet user,
     recipient_id is set so the mail appears in their inbox instantly.
+    Also creates CC copies for registered CC recipients.
     """
-    to_email = payload.to_email.strip().lower()
+    to_email = payload.to_email.strip().lower() if payload.to_email else ""
+    is_draft = payload.is_draft
 
     # Look up recipient by email (case-insensitive)
-    result = await db.execute(
-        select(models.User).where(models.User.email == to_email)
-    )
-    recipient_user = result.scalars().first()
+    recipient_user = None
+    if to_email:
+        result = await db.execute(
+            select(models.User).where(models.User.email == to_email)
+        )
+        recipient_user = result.scalars().first()
 
-    recipient_name = (payload.to_name.strip()
-                      or (recipient_user.username if recipient_user else to_email.split("@")[0]))
+    recipient_name = ""
+    if to_email:
+        recipient_name = (payload.to_name.strip()
+                          or (recipient_user.username if recipient_user else to_email.split("@")[0]))
 
     attachment_str = None
     if payload.attachment_urls:
         attachment_str = json.dumps(payload.attachment_urls)
     elif payload.attachment_url:
         attachment_str = json.dumps([payload.attachment_url])
+
+    # Serialize CC/BCC lists
+    cc_str = json.dumps(payload.cc_emails) if payload.cc_emails else None
+    bcc_str = json.dumps(payload.bcc_emails) if payload.bcc_emails else None
 
     mail = models.Mail(
         sender_id      = current_user.id,
@@ -994,7 +1043,23 @@ async def send_mail(
         read           = False,
         starred        = False,
         attachment_url = attachment_str,
+        cc_emails      = cc_str,
+        bcc_emails     = bcc_str,
+        status         = "draft" if is_draft else "sent",
+        parent_id      = payload.parent_id,
     )
+
+    # If it's a draft, just save and return
+    if is_draft:
+        db.add(mail)
+        await db.commit()
+        await db.refresh(mail)
+        return {
+            "id": mail.id,
+            "status": "draft",
+            "delivered_to_registered_user": False,
+            "recipient": None,
+        }
     
     # Auto-categorize and summarize the email before saving
     from ai_service import categorize_mail_strict, generate_auto_tags, generate_mail_summary_strict
@@ -1064,13 +1129,72 @@ async def send_mail(
         await db.commit()
     # -------------------------------------
 
+    # --- Create CC copies for registered CC users ---
+    if payload.cc_emails:
+        for cc_email in payload.cc_emails:
+            cc_email_lower = cc_email.strip().lower()
+            if cc_email_lower == to_email:
+                continue  # Skip if same as primary recipient
+            cc_result = await db.execute(
+                select(models.User).where(models.User.email == cc_email_lower)
+            )
+            cc_user = cc_result.scalars().first()
+            if cc_user:
+                cc_mail = models.Mail(
+                    sender_id       = current_user.id,
+                    recipient_id    = cc_user.id,
+                    recipient_email = cc_email_lower,
+                    recipient_name  = cc_user.username,
+                    subject         = payload.subject,
+                    body            = payload.body,
+                    read            = False,
+                    starred         = False,
+                    attachment_url  = attachment_str,
+                    cc_emails       = cc_str,
+                    status          = "sent",
+                    parent_id       = payload.parent_id,
+                    category        = mail.category,
+                    ai_summary      = mail.ai_summary,
+                )
+                db.add(cc_mail)
+        await db.commit()
+
+    # --- Create BCC copies for registered BCC users ---
+    if payload.bcc_emails:
+        for bcc_email in payload.bcc_emails:
+            bcc_email_lower = bcc_email.strip().lower()
+            if bcc_email_lower == to_email:
+                continue
+            bcc_result = await db.execute(
+                select(models.User).where(models.User.email == bcc_email_lower)
+            )
+            bcc_user = bcc_result.scalars().first()
+            if bcc_user:
+                bcc_mail = models.Mail(
+                    sender_id       = current_user.id,
+                    recipient_id    = bcc_user.id,
+                    recipient_email = bcc_email_lower,
+                    recipient_name  = bcc_user.username,
+                    subject         = payload.subject,
+                    body            = payload.body,
+                    read            = False,
+                    starred         = False,
+                    attachment_url  = attachment_str,
+                    status          = "sent",
+                    parent_id       = payload.parent_id,
+                    category        = mail.category,
+                    ai_summary      = mail.ai_summary,
+                )
+                db.add(bcc_mail)
+        await db.commit()
+
     ai_service.add_mail_to_rag(current_user.id, mail.id, mail.subject, mail.body)
     if recipient_user:
         ai_service.add_mail_to_rag(recipient_user.id, mail.id, mail.subject, mail.body)
 
     return {
-
         "id": mail.id,
+        "status": "sent",
         "delivered_to_registered_user": recipient_user is not None,
         "recipient": recipient_user.username if recipient_user else None,
     }
@@ -1081,7 +1205,7 @@ async def get_inbox(
     current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Return all mails received by the current user, newest first, excluding those in custom folders."""
+    """Return all mails received by the current user, newest first, excluding drafts and those in custom folders."""
     from sqlalchemy.sql import exists
     folder_exists = exists().where(
         and_(
@@ -1098,6 +1222,7 @@ async def get_inbox(
                     models.Mail.recipient_id    == current_user.id,
                     models.Mail.recipient_email == current_user.email,
                 ),
+                or_(models.Mail.status != "draft", models.Mail.status == None),
                 ~folder_exists
             )
         )
@@ -1112,7 +1237,7 @@ async def get_sent(
     current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Return all mails sent by the current user, newest first, excluding those in custom folders."""
+    """Return all mails sent by the current user, newest first, excluding drafts and those in custom folders."""
     from sqlalchemy.sql import exists
     folder_exists = exists().where(
         and_(
@@ -1126,6 +1251,7 @@ async def get_sent(
         .where(
             and_(
                 models.Mail.sender_id == current_user.id,
+                or_(models.Mail.status != "draft", models.Mail.status == None),
                 ~folder_exists
             )
         )
@@ -1133,6 +1259,100 @@ async def get_sent(
     )
     mails = result.scalars().all()
     return [_mail_to_dict(m, current_user.id) for m in mails]
+
+
+@app.get("/mail/drafts")
+async def get_drafts(
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return all drafts for the current user, newest first."""
+    result = await db.execute(
+        select(models.Mail)
+        .options(*_MAIL_OPTS)
+        .where(
+            and_(
+                models.Mail.sender_id == current_user.id,
+                models.Mail.status == "draft",
+            )
+        )
+        .order_by(models.Mail.created_at.desc())
+    )
+    mails = result.scalars().all()
+    return [_mail_to_dict(m, current_user.id) for m in mails]
+
+
+@app.put("/mail/draft/{draft_id}")
+async def update_draft(
+    draft_id: int,
+    payload: MailSend,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update an existing draft. If is_draft=False, promotes it to sent."""
+    result = await db.execute(
+        select(models.Mail).where(
+            models.Mail.id == draft_id,
+            models.Mail.sender_id == current_user.id,
+            models.Mail.status == "draft",
+        )
+    )
+    mail = result.scalars().first()
+    if not mail:
+        raise HTTPException(404, "Draft not found")
+
+    to_email = payload.to_email.strip().lower() if payload.to_email else ""
+    recipient_user = None
+    if to_email:
+        r = await db.execute(select(models.User).where(models.User.email == to_email))
+        recipient_user = r.scalars().first()
+
+    mail.recipient_email = to_email
+    mail.recipient_id = recipient_user.id if recipient_user else None
+    mail.recipient_name = (payload.to_name.strip()
+                           or (recipient_user.username if recipient_user else to_email.split("@")[0] if to_email else ""))
+    mail.subject = payload.subject
+    mail.body = payload.body
+    mail.parent_id = payload.parent_id
+
+    if payload.attachment_urls:
+        mail.attachment_url = json.dumps(payload.attachment_urls)
+    elif payload.attachment_url:
+        mail.attachment_url = json.dumps([payload.attachment_url])
+
+    mail.cc_emails = json.dumps(payload.cc_emails) if payload.cc_emails else None
+    mail.bcc_emails = json.dumps(payload.bcc_emails) if payload.bcc_emails else None
+
+    if not payload.is_draft:
+        # Promote draft to sent
+        mail.status = "sent"
+        mail.created_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(mail)
+
+    return {
+        "id": mail.id,
+        "status": mail.status,
+        "delivered_to_registered_user": recipient_user is not None,
+        "recipient": recipient_user.username if recipient_user else None,
+    }
+
+
+@app.get("/mail/{mail_id}/read-status")
+async def get_read_status(
+    mail_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if a sent mail has been read by the recipient (read receipt)."""
+    result = await db.execute(select(models.Mail).where(models.Mail.id == mail_id))
+    mail = result.scalars().first()
+    if not mail:
+        raise HTTPException(404, "Mail not found")
+    if mail.sender_id != current_user.id:
+        raise HTTPException(403, "Forbidden")
+    return {"read": mail.read, "id": mail.id}
 
 
 @app.get("/mail/poll")

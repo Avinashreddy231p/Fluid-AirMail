@@ -80,19 +80,24 @@ class Mail(Base):
     sender_id      = Column(Integer, ForeignKey("users.id"), nullable=False)
     recipient_id   = Column(Integer, ForeignKey("users.id"), nullable=True)   # null = external
     recipient_email = Column(String, index=True)                              # always stored
+    cc_emails      = Column(String, nullable=True)                            # JSON string of CCs
+    bcc_emails     = Column(String, nullable=True)                            # JSON string of BCCs
     recipient_name  = Column(String, default="")
     subject        = Column(String, default="")
     body           = Column(Text, default="")
     starred        = Column(Boolean, default=False)
     read           = Column(Boolean, default=False)                           # for recipient
     category       = Column(String, default="inbox")
+    status         = Column(String, default="sent")                           # sent, draft
     is_trashed     = Column(Boolean, default=False)
     attachment_url = Column(String, nullable=True)
     ai_summary     = Column(Text, nullable=True)
+    parent_id      = Column(Integer, ForeignKey("mails.id", ondelete="SET NULL"), nullable=True)
     created_at     = Column(DateTime, default=datetime.utcnow)
 
     sender    = relationship("User", foreign_keys=[sender_id],    back_populates="sent_mails")
     recipient = relationship("User", foreign_keys=[recipient_id], back_populates="received_mails")
+    parent    = relationship("Mail", remote_side=[id])
     tags      = relationship("Tag", secondary=mail_tags, backref="mails")
     folder_associations = relationship("MailFolderAssociation", back_populates="mail", cascade="all, delete-orphan")
 

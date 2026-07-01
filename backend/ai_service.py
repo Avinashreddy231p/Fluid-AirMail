@@ -7,6 +7,8 @@ from sqlalchemy.future import select
 import models
 
 import threading
+import datetime
+import asyncio
 
 _chroma_client = None
 _emails_collection = None
@@ -46,7 +48,7 @@ async def generate_summary(user, text, context_type="emails"):
         
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             return response.text
         else:
@@ -88,12 +90,14 @@ def add_chat_to_rag(user_id, chat_id, text):
 async def query_rag(user, query: str, history: list[dict] = [], db=None, context_settings: dict = {}):
     try:
         emails_coll, chats_coll = get_collections()
-        email_results = emails_coll.query(
+        email_results = await asyncio.to_thread(
+            emails_coll.query,
             query_texts=[query],
             n_results=3,
             where={"user_id": user.id}
         )
-        chat_results = chats_coll.query(
+        chat_results = await asyncio.to_thread(
+            chats_coll.query,
             query_texts=[query],
             n_results=3,
             where={"user_id": user.id}
@@ -149,9 +153,12 @@ async def query_rag(user, query: str, history: list[dict] = [], db=None, context
                 notes_str = "\n".join([f"[Note ID: {n.id}] {n.title}: {n.content[:800]}" for n in notes])
         
         settings_str = json.dumps(context_settings, indent=2) if context_settings else "No extra settings provided."
+        
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %I:%M %p")
 
         prompt = f"""You are Surya, a radiant, warm, and highly capable AI assistant with ultimate power. Your personality is bright, empathetic, and exceptionally helpful, much like the sun.
 Your goal is to answer the user's request and execute actions on their behalf using the provided personal context (from their emails and chats).
+IMPORTANT: The current local time is {current_time}. When scheduling events or tasks, DO NOT append a 'Z' to timestamps. Generate them in 'YYYY-MM-DDTHH:MM:SS' format.
 If the answer is not in the context, say you cannot find it in their records. Be polite, concise, and helpful.
 
 You have the authority to trash emails, tag emails, create folders, group emails, draft/send emails, send chats, and manage the user's ecosystem (Tasks, Calendar Events, Notes).
@@ -219,7 +226,7 @@ You MUST return a valid JSON object matching this exact schema:
     {{
       "type": "create_task",
       "title": "Buy groceries",
-      "due_date": "2026-06-24T17:00:00Z",
+      "due_date": "2026-06-24T17:00:00",
       "description": "Milk, eggs, bread"
     }}
   ]
@@ -254,7 +261,7 @@ User Request: {query}"""
 
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             # Try to parse json from text as gemini might include markdown
             text = response.text.strip()
@@ -280,13 +287,13 @@ async def get_available_models(provider: str, key: str) -> list[dict]:
         if provider == "gemini":
             if not key: return []
             genai.configure(api_key=key)
-            allowed = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-exp"]
-            recommended = ["gemini-1.5-pro", "gemini-2.0-flash"]
+            allowed = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-exp", "gemini-2.5-flash", "gemini-2.5-pro"]
+            recommended = ["gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.5-flash"]
             models = []
             for m in genai.list_models():
                 if 'generateContent' in m.supported_generation_methods:
                     mid = m.name.replace('models/', '')
-                    if any(mid.startswith(a) for a in allowed):
+                    if any(mid.startswith(a) for a in allowed) and not any(x in mid for x in ["-tts", "-audio", "-image", "-live"]):
                         is_rec = any(mid.startswith(r) for r in recommended)
                         models.append({"id": mid, "tokens": getattr(m, 'inputTokenLimit', 0), "recommended": is_rec})
             return sorted(models, key=lambda x: (not x["recommended"], x["id"]))
@@ -333,7 +340,7 @@ History:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             text = response.text.strip()
             if text.startswith("```json"): text = text[7:-3]
@@ -370,7 +377,7 @@ async def generate_mail_tool_text(user, tool_type: str, text: str) -> str:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             content = model.generate_content(prompt).text.strip()
         else:
             client = await get_llm_client(user)
@@ -393,7 +400,7 @@ async def generate_mail_summary_strict(user, text: str) -> str:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             return model.generate_content(prompt).text.strip()
         else:
             client = await get_llm_client(user)
@@ -422,7 +429,7 @@ Email content:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
@@ -455,7 +462,7 @@ Email content:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
@@ -494,7 +501,7 @@ Email content:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
@@ -535,7 +542,7 @@ Template content:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
@@ -570,7 +577,7 @@ Body: {mail_body}"""
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
@@ -608,7 +615,7 @@ Chat History:
     try:
         if user.ai_provider == "gemini":
             genai.configure(api_key=user.gemini_key or "invalid")
-            model = genai.GenerativeModel(user.ai_model or 'gemini-flash-latest')
+            model = genai.GenerativeModel(user.ai_model or 'gemini-2.5-flash')
             response = model.generate_content(prompt)
             content = response.text.strip()
         else:
